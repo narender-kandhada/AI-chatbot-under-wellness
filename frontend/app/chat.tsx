@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { ChatBubble } from '../components/ChatBubble';
 import { colors, spacing, typography, borderRadius } from '../constants/theme';
 import { Send, ArrowLeft } from 'lucide-react-native';
+import { sendMessageToCompanion } from '../services/companion.service';
 
 interface Message {
   id: string;
@@ -50,33 +51,48 @@ export default function ChatScreen() {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
 
-  const handleSend = () => {
-    if (inputText.trim()) {
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        text: inputText,
-        isUser: true,
-        timestamp: 'Just now',
-      };
+const handleSend = async () => {
+  if (!inputText.trim()) return;
 
-      setMessages((prev) => [...prev, userMessage]);
-      setInputText('');
-
-      setTimeout(() => {
-        const randomResponse =
-          companionResponses[
-            Math.floor(Math.random() * companionResponses.length)
-          ];
-        const companionMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: randomResponse,
-          isUser: false,
-          timestamp: 'Just now',
-        };
-        setMessages((prev) => [...prev, companionMessage]);
-      }, 1000);
-    }
+  const userMessage: Message = {
+    id: Date.now().toString(),
+    text: inputText,
+    isUser: true,
+    timestamp: 'Just now',
   };
+
+  setMessages((prev) => [...prev, userMessage]);
+
+  const messageToSend = inputText;
+  setInputText('');
+
+  try {
+    const response = await sendMessageToCompanion({
+      message: messageToSend,
+      mood: "neutral",
+    });
+
+    const companionMessage: Message = {
+      id: (Date.now() + 1).toString(),
+      text: response.reply,
+      isUser: false,
+      timestamp: 'Just now',
+    };
+
+    setMessages((prev) => [...prev, companionMessage]);
+  } catch (error) {
+    console.error('Backend connection failed:', error);
+
+    const errorMessage: Message = {
+      id: (Date.now() + 2).toString(),
+      text: "I'm having trouble connecting right now.",
+      isUser: false,
+      timestamp: 'Just now',
+    };
+
+    setMessages((prev) => [...prev, errorMessage]);
+  }
+};
 
   const handleReflection = () => {
     router.push({ pathname: 'reflection' } as any);

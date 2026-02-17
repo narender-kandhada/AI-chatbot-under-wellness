@@ -37,3 +37,4 @@ export async function sendMessageToCompanion(
     throw error;
   }
 }
+console.log("API_BASE_URL:", API_BASE_URL);
