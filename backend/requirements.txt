@@ -5,3 +5,7 @@ numpy
 pandas
 scikit-learn
 pydantic_settings
+joblib
+scikit-learn
+seaborn
+matplotlib
