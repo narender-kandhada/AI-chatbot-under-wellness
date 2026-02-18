@@ -1,22 +1,35 @@
 """
-Preprocessing Module.
-
-This module handles text cleaning and preprocessing
-before passing input to ML models.
+Text Preprocessing Utilities
 """
-# app/ml/preprocessing.py
+
 import re
+import string
 
 def clean_text(text: str) -> str:
     """
-    Clean and normalize input text.
+    Cleans raw input text.
 
-    Args:
-        text (str): Raw user input.
-
-    Returns:
-        str: Cleaned text.
+    Steps:
+    1. Lowercase
+    2. Remove URLs
+    3. Remove numbers
+    4. Remove punctuation
+    5. Remove extra spaces
     """
+
+    # 1️⃣ Lowercase
     text = text.lower()
-    text = re.sub(r"[^a-zA-Z\s]", "", text)
-    return text.strip()
+
+    # 2️⃣ Remove URLs
+    text = re.sub(r"http\S+|www\S+", "", text)
+
+    # 3️⃣ Remove numbers
+    text = re.sub(r"\d+", "", text)
+
+    # 4️⃣ Remove punctuation
+    text = text.translate(str.maketrans("", "", string.punctuation))
+
+    # 5️⃣ Remove extra spaces
+    text = re.sub(r"\s+", " ", text).strip()
+
+    return text
