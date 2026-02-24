@@ -1,36 +1,15 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  useColorScheme,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme } from 'react-native';
+import { CalmBackground } from '../../components/AmbientBackground';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 import { Heart, Phone } from 'lucide-react-native';
 
 const resources = [
-  {
-    id: '1',
-    name: 'National Crisis Helpline',
-    description: 'Available 24/7 for immediate support',
-    number: 'XXX-XXX-XXXX',
-  },
-  {
-    id: '2',
-    name: 'Mental Health Support Line',
-    description: 'Trained counselors ready to help',
-    number: 'XXX-XXX-XXXX',
-  },
-  {
-    id: '3',
-    name: 'Text Support Service',
-    description: 'Text-based crisis support',
-    number: 'Text SUPPORT to XXXXX',
-  },
+  { id: '1', name: 'National Crisis Helpline', desc: 'Available 24/7 for immediate support', number: 'XXX-XXX-XXXX', color: '#E8B86D' },
+  { id: '2', name: 'Mental Health Support', desc: 'Trained counselors ready to help', number: 'XXX-XXX-XXXX', color: '#6B8E6E' },
+  { id: '3', name: 'Text Support Service', desc: 'Text-based crisis support', number: 'Text SUPPORT to XXXXX', color: '#7DB8A6' },
 ];
 
 export default function CrisisScreen() {
@@ -38,265 +17,92 @@ export default function CrisisScreen() {
   const theme = colors[scheme];
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-      >
-        <View
-          style={[
-            styles.heroSection,
-            { backgroundColor: theme.primary + '15' },
-          ]}
-        >
-          <View
-            style={[
-              styles.heroIcon,
-              { backgroundColor: theme.primary + '30' },
-            ]}
-          >
-            <Heart size={40} color={theme.primary} />
+    <CalmBackground warm>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <View style={[styles.hero, { backgroundColor: theme.surface }]}>
+          <View style={[styles.heroIcon, { backgroundColor: theme.warmAccent + '30' }]}>
+            <Heart size={32} color={theme.warmAccentDark} fill={theme.warmAccent + '40'} />
           </View>
-          <Text style={[styles.heroTitle, { color: theme.text }]}>
-            You don&apos;t have to go through this alone
-          </Text>
+          <Text style={[styles.heroTitle, { color: theme.text }]}>You don't have to{'\n'}go through this alone</Text>
           <Text style={[styles.heroText, { color: theme.textSecondary }]}>
-            If you&apos;re in crisis or need immediate support, reaching out is a
-            sign of strength. Help is available, and people care about you.
+            If you're going through a difficult time, reaching out is a sign of strength. Help is always available. 💚
           </Text>
         </View>
 
-        <View style={styles.actionsSection}>
-          <Button
-            title="Reach out to someone I trust"
-            onPress={() => {}}
-            fullWidth
-            variant="primary"
-          />
+        <View style={styles.actionsRow}>
+          <Button title="Reach out to someone I trust" onPress={() => { }} fullWidth />
           <View style={{ height: spacing.md }} />
-          <Button
-            title="View support resources"
-            onPress={() => {}}
-            fullWidth
-            variant="secondary"
-          />
+          <Button title="View support resources" onPress={() => { }} fullWidth variant="secondary" />
         </View>
 
-        <Card title="Support Resources">
-          <Text
-            style={[
-              styles.resourcesIntro,
-              { color: theme.textSecondary },
-            ]}
-          >
-            These are placeholder numbers. In a real app, these would be actual
-            crisis helplines in your region.
+        <Card title="Support Resources" accentColor={theme.warmAccentDark}>
+          <Text style={[styles.resourcesIntro, { color: theme.textSecondary }]}>
+            These are placeholder numbers. In a real app, these would connect to actual crisis helplines.
           </Text>
         </Card>
 
-        <View style={styles.resourcesList}>
-          {resources.map((resource) => (
-            <TouchableOpacity
-              key={resource.id}
-              style={[
-                styles.resourceCard,
-                {
-                  backgroundColor: theme.surface,
-                  borderColor: theme.border,
-                },
-              ]}
-              activeOpacity={0.7}
-            >
-              <View
-                style={[
-                  styles.resourceIcon,
-                  { backgroundColor: theme.success + '30' },
-                ]}
-              >
-                <Phone size={20} color={theme.success} />
+        {resources.map((r) => (
+          <TouchableOpacity key={r.id} activeOpacity={0.7}>
+            <View style={[styles.resourceCard, { backgroundColor: theme.surface, borderColor: theme.borderLight }]}>
+              <View style={[styles.accentBar, { backgroundColor: r.color }]} />
+              <View style={[styles.resourceIcon, { backgroundColor: r.color + '15' }]}>
+                <Phone size={18} color={r.color} />
               </View>
-              <View style={styles.resourceContent}>
-                <Text style={[styles.resourceName, { color: theme.text }]}>
-                  {resource.name}
-                </Text>
-                <Text
-                  style={[
-                    styles.resourceDescription,
-                    { color: theme.textSecondary },
-                  ]}
-                >
-                  {resource.description}
-                </Text>
-                <Text
-                  style={[styles.resourceNumber, { color: theme.primary }]}
-                >
-                  {resource.number}
-                </Text>
+              <View style={styles.resourceInfo}>
+                <Text style={[styles.resourceName, { color: theme.text }]}>{r.name}</Text>
+                <Text style={[styles.resourceDesc, { color: theme.textSecondary }]}>{r.desc}</Text>
+                <Text style={[styles.resourceNumber, { color: r.color }]}>{r.number}</Text>
               </View>
-            </TouchableOpacity>
-          ))}
+            </View>
+          </TouchableOpacity>
+        ))}
+
+        <View style={[styles.reminderBox, { backgroundColor: theme.surface, borderColor: theme.borderLight }]}>
+          <Text style={[styles.reminderTitle, { color: theme.text }]}>💚 Remember</Text>
+          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• You deserve support and care</Text>
+          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• It's okay to ask for help</Text>
+          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• This feeling won't last forever</Text>
+          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• You are not a burden</Text>
         </View>
 
-        <View
-          style={[
-            styles.reminderBox,
-            {
-              backgroundColor: theme.calm + '20',
-              borderColor: theme.calm,
-            },
-          ]}
-        >
-          <Text style={[styles.reminderTitle, { color: theme.text }]}>
-            Remember
-          </Text>
-          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>
-            • You deserve support and care
-          </Text>
-            <Text style={[styles.reminderText, { color: theme.textSecondary }]}>
-            • It&apos;s okay to ask for help
-          </Text>
-          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>
-            • This feeling won&apos;t last forever
-          </Text>
-          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>
-            • You are not a burden
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.emergencyBox,
-            {
-              backgroundColor: theme.warning + '20',
-              borderColor: theme.warning,
-            },
-          ]}
-        >
-          <Text style={[styles.emergencyTitle, { color: theme.text }]}>
-            In case of emergency
-          </Text>
-          <Text
-            style={[styles.emergencyText, { color: theme.textSecondary }]}
-          >
-            If you or someone you know is in immediate danger, please call
-            emergency services (911 in the US) or go to your nearest emergency
-            room.
+        <View style={[styles.emergencyBox, { backgroundColor: theme.warmAccent + '15', borderColor: theme.warmAccentDark + '20' }]}>
+          <Text style={[styles.emergencyTitle, { color: theme.text }]}>⚠️ In case of emergency</Text>
+          <Text style={[styles.emergencyText, { color: theme.textSecondary }]}>
+            If you or someone is in immediate danger, please call emergency services (911) or go to your nearest emergency room.
           </Text>
         </View>
       </ScrollView>
-    </View>
+    </CalmBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  scroll: { flex: 1 },
+  content: { paddingTop: spacing.xxl + spacing.lg, paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
+  hero: {
+    padding: spacing.xl, borderRadius: borderRadius.xl, alignItems: 'center', marginBottom: spacing.xl,
+    shadowColor: 'rgba(0,0,0,0.05)', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 12, elevation: 2,
   },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingTop: spacing.xxl,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  heroSection: {
-    padding: spacing.xl,
-    borderRadius: borderRadius.lg,
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  heroIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  heroTitle: {
-    fontSize: typography.sizes.xxl,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: spacing.md,
-    lineHeight: typography.sizes.xxl * typography.lineHeights.tight,
-  },
-  heroText: {
-    fontSize: typography.sizes.base,
-    textAlign: 'center',
-    lineHeight: typography.sizes.base * typography.lineHeights.relaxed,
-  },
-  actionsSection: {
-    marginBottom: spacing.xl,
-  },
-  resourcesIntro: {
-    fontSize: typography.sizes.base,
-    lineHeight: typography.sizes.base * typography.lineHeights.normal,
-    marginBottom: spacing.md,
-  },
-  resourcesList: {
-    marginTop: spacing.lg,
-  },
+  heroIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
+  heroTitle: { fontSize: typography.sizes.xxl, fontWeight: '800', textAlign: 'center', marginBottom: spacing.md, lineHeight: typography.sizes.xxl * 1.3 },
+  heroText: { fontSize: typography.sizes.base, textAlign: 'center', lineHeight: typography.sizes.base * 1.65 },
+  actionsRow: { marginBottom: spacing.xl },
+  resourcesIntro: { fontSize: typography.sizes.sm, lineHeight: typography.sizes.sm * 1.5 },
   resourceCard: {
-    flexDirection: 'row',
-    padding: spacing.lg,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    marginBottom: spacing.md,
+    flexDirection: 'row', padding: spacing.lg, borderRadius: borderRadius.xl, borderWidth: 1,
+    marginBottom: spacing.md, gap: spacing.md, alignItems: 'center', overflow: 'hidden',
+    shadowColor: 'rgba(0,0,0,0.04)', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 1, shadowRadius: 8, elevation: 1,
   },
-  resourceIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  resourceContent: {
-    flex: 1,
-  },
-  resourceName: {
-    fontSize: typography.sizes.lg,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  resourceDescription: {
-    fontSize: typography.sizes.sm,
-    marginBottom: spacing.xs,
-  },
-  resourceNumber: {
-    fontSize: typography.sizes.base,
-    fontWeight: '600',
-  },
-  reminderBox: {
-    padding: spacing.lg,
-    borderRadius: borderRadius.md,
-    borderWidth: 1.5,
-    marginTop: spacing.xl,
-  },
-  reminderTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: '600',
-    marginBottom: spacing.md,
-  },
-  reminderText: {
-    fontSize: typography.sizes.base,
-    lineHeight: typography.sizes.base * typography.lineHeights.relaxed,
-    marginBottom: spacing.xs,
-  },
-  emergencyBox: {
-    padding: spacing.lg,
-    borderRadius: borderRadius.md,
-    borderWidth: 1.5,
-    marginTop: spacing.lg,
-  },
-  emergencyTitle: {
-    fontSize: typography.sizes.lg,
-    fontWeight: '600',
-    marginBottom: spacing.sm,
-  },
-  emergencyText: {
-    fontSize: typography.sizes.base,
-    lineHeight: typography.sizes.base * typography.lineHeights.relaxed,
-  },
+  accentBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
+  resourceIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  resourceInfo: { flex: 1 },
+  resourceName: { fontSize: typography.sizes.base, fontWeight: '700', marginBottom: 2 },
+  resourceDesc: { fontSize: typography.sizes.sm, marginBottom: spacing.xs },
+  resourceNumber: { fontSize: typography.sizes.base, fontWeight: '700' },
+  reminderBox: { padding: spacing.lg, borderRadius: borderRadius.xl, marginTop: spacing.xl, borderWidth: 1 },
+  reminderTitle: { fontSize: typography.sizes.lg, fontWeight: '800', marginBottom: spacing.md },
+  reminderText: { fontSize: typography.sizes.base, lineHeight: typography.sizes.base * 1.7, marginBottom: spacing.xs },
+  emergencyBox: { padding: spacing.lg, borderRadius: borderRadius.xl, marginTop: spacing.lg, borderWidth: 1 },
+  emergencyTitle: { fontSize: typography.sizes.lg, fontWeight: '800', marginBottom: spacing.sm },
+  emergencyText: { fontSize: typography.sizes.base, lineHeight: typography.sizes.base * 1.65 },
 });

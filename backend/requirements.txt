@@ -10,3 +10,5 @@ scikit-learn
 seaborn
 matplotlib
 openpyxl
+google-generativeai
+python-dotenv

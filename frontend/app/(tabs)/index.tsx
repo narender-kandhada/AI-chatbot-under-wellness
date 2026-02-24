@@ -1,133 +1,72 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  useColorScheme,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
+  View, Text, StyleSheet, Animated, useColorScheme,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Button } from '../../components/Button';
+import { CalmBackground } from '../../components/AmbientBackground';
 import { MoodSelector, MoodType } from '../../components/MoodSelector';
-import { colors, spacing, typography, borderRadius } from '../../constants/theme';
+import { colors, spacing, typography } from '../../constants/theme';
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return { text: 'Good morning', emoji: '🌅' };
+  if (h < 17) return { text: 'Good afternoon', emoji: '☀️' };
+  if (h < 21) return { text: 'Good evening', emoji: '🌇' };
+  return { text: 'Good night', emoji: '🌙' };
+}
 
 export default function CheckInScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = colors[scheme];
-  const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
-  const [additionalThoughts, setAdditionalThoughts] = useState('');
+  const greeting = getGreeting();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(15)).current;
 
-  const handleContinue = () => {
-    if (selectedMood) {
-      router.push({ pathname: 'chat' } as any);
-    }
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const handleMoodSelect = (mood: MoodType) => {
+    // Navigate to chat immediately with selected mood
+    router.push({ pathname: 'chat', params: { mood } } as any);
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        style={[styles.container, { backgroundColor: theme.background }]}
-        contentContainerStyle={styles.content}
-      >
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>
-            How are you feeling right now?
-          </Text>
+    <CalmBackground>
+      <View style={styles.container}>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <Text style={styles.emoji}>{greeting.emoji}</Text>
+          <Text style={[styles.greeting, { color: theme.primary }]}>{greeting.text}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>How are you feeling?</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Your emotions are valid, whatever they may be
+            Tap your mood to start chatting 🌿
           </Text>
-        </View>
+        </Animated.View>
 
         <View style={styles.moodSection}>
-          <MoodSelector
-            selectedMood={selectedMood}
-            onSelectMood={setSelectedMood}
-          />
+          <MoodSelector selectedMood={null} onSelectMood={handleMoodSelect} />
         </View>
 
-        <View style={styles.inputSection}>
-          <Text style={[styles.inputLabel, { color: theme.textSecondary }]}>
-            Want to share more? (Optional)
+        <View style={styles.footer}>
+          <Text style={[styles.footerText, { color: theme.textLight }]}>
+            Your space. Your pace. No pressure. 💚
           </Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: theme.surface,
-                borderColor: theme.border,
-                color: theme.text,
-              },
-            ]}
-            placeholder="Take your time, there's no rush..."
-            placeholderTextColor={theme.textLight}
-            value={additionalThoughts}
-            onChangeText={setAdditionalThoughts}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-          />
         </View>
-
-        <View style={styles.buttonContainer}>
-          <Button
-            title="Continue"
-            onPress={handleContinue}
-            disabled={!selectedMood}
-            fullWidth
-          />
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </View>
+    </CalmBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-    padding: spacing.lg,
-  },
-  header: {
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
-  },
-  title: {
-    fontSize: typography.sizes.xxxl,
-    fontWeight: '700',
-    marginBottom: spacing.md,
-    lineHeight: typography.sizes.xxxl * typography.lineHeights.tight,
-  },
-  subtitle: {
-    fontSize: typography.sizes.lg,
-    lineHeight: typography.sizes.lg * typography.lineHeights.normal,
-  },
-  moodSection: {
-    marginBottom: spacing.xl,
-  },
-  inputSection: {
-    marginBottom: spacing.xl,
-  },
-  inputLabel: {
-    fontSize: typography.sizes.base,
-    marginBottom: spacing.md,
-    fontWeight: '500',
-  },
-  input: {
-    borderWidth: 1.5,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: typography.sizes.base,
-    minHeight: 120,
-  },
-  buttonContainer: {
-    marginTop: 'auto',
-  },
+  container: { flex: 1, padding: spacing.xl, paddingTop: spacing.xxl + spacing.lg, justifyContent: 'space-between' },
+  emoji: { fontSize: 40, marginBottom: spacing.sm },
+  greeting: { fontSize: typography.sizes.base, fontWeight: '600', marginBottom: spacing.xs },
+  title: { fontSize: typography.sizes.xxxl, fontWeight: '800', marginBottom: spacing.md, lineHeight: typography.sizes.xxxl * 1.15 },
+  subtitle: { fontSize: typography.sizes.base, lineHeight: typography.sizes.base * 1.7, marginBottom: spacing.xl },
+  moodSection: { marginBottom: spacing.xl },
+  footer: { alignItems: 'center', paddingBottom: spacing.lg },
+  footerText: { fontSize: typography.sizes.sm, fontStyle: 'italic' },
 });

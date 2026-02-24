@@ -1,135 +1,147 @@
-# InnerCircle - Wellness Companion App
+# 🧠 InnerCircle — AI Wellness Companion
 
-A modern, calm, and emotionally supportive wellness companion mobile app built with React Native (Expo).
+A modern, emotionally-intelligent wellness companion app with ML-powered emotion detection, empathetic responses, and crisis support.
 
-## Overview
+> **⚠️ Disclaimer:** InnerCircle is not a therapist or medical tool. It is a supportive companion that listens with empathy. If you need professional help, please reach out to a licensed mental health professional.
 
-InnerCircle is a personal emotional companion (not a therapist) that listens, responds with empathy, and helps users feel understood, safe, and supported. It acts as a caring friend while clearly respecting emotional and ethical boundaries.
+---
 
-## Features
+## ✨ Features
 
-### Screens
+| Feature | Description |
+|---------|-------------|
+| **Mood Check-In** | Emoji-based mood selector with 6 emotions |
+| **AI Companion Chat** | Empathetic, context-aware responses powered by ML |
+| **Emotion Detection** | Real-time sentiment + emotion analysis (8 categories) |
+| **Safety Monitoring** | Crisis language detection with support resources |
+| **Reflection & Suggestions** | Personalized self-care recommendations |
+| **Privacy-First** | Local data, no tracking, incognito mode available |
+| **Crisis Support** | Dedicated screen with helpline resources |
 
-1. **Welcome/Onboarding Screen**
-   - App introduction with name and tagline
-   - Clear disclaimer about the app's purpose
-   - Get started call-to-action
-
-2. **Daily Check-In Screen** (Home Tab)
-   - Mood selector with emoji-based options (calm, sad, anxious, tired, okay, happy)
-   - Optional text input for additional thoughts
-   - Emotionally supportive messaging
-
-3. **Companion Chat Screen**
-   - Chat-style interface for conversations
-   - Empathetic, warm, and non-judgmental AI responses (mocked)
-   - Privacy reminder
-   - Access to reflection screen
-
-4. **Reflection & Suggestions Screen**
-   - Summary of what was heard
-   - Gentle suggestions for self-care activities
-   - No commands or medical advice
-   - Optional language throughout
-
-5. **Privacy & Trust Screen** (Privacy Tab)
-   - Clear privacy principles
-   - Data ownership statements
-   - Settings toggles for conversation history and incognito mode
-   - No sharing without consent promise
-
-6. **Crisis Support Screen** (Support Tab)
-   - Calm, supportive messaging
-   - Quick action buttons to reach out
-   - Placeholder support resources
-   - Important reminders and emergency information
-
-## Design Principles
-
-- **Minimal & Soothing**: Clean, human-centered design
-- **Soft Color Palette**: Pastel blues, lavender, and warm neutrals
-- **Rounded Corners**: Gentle shadows and soft edges
-- **Friendly Typography**: Large, readable text
-- **Dark Mode Support**: Full theme support for light and dark modes
-- **Emotionally Safe**: All microcopy is supportive and non-judgmental
-
-## Tech Stack
-
-- React Native (Expo SDK 52)
-- TypeScript
-- Expo Router (file-based routing)
-- Functional components
-- Lucide React Native (icons)
-
-## Project Structure
+## 🏗️ Architecture
 
 ```
-├── app/
-│   ├── (tabs)/           # Tab navigation group
-│   │   ├── _layout.tsx   # Tab bar configuration
-│   │   ├── index.tsx     # Check-In screen (Home)
-│   │   ├── privacy.tsx   # Privacy & Trust screen
-│   │   └── crisis.tsx    # Crisis Support screen
-│   ├── _layout.tsx       # Root layout
-│   ├── index.tsx         # Initial redirect
-│   ├── welcome.tsx       # Onboarding screen
-│   ├── chat.tsx          # Companion Chat screen
-│   └── reflection.tsx    # Reflection & Suggestions screen
-├── components/
-│   ├── Button.tsx        # Reusable button component
-│   ├── Card.tsx          # Reusable card component
-│   ├── ChatBubble.tsx    # Chat message bubble
-│   └── MoodSelector.tsx  # Mood selection component
-├── constants/
-│   └── theme.ts          # Color themes and design tokens
-└── hooks/
-    └── useFrameworkReady.ts  # Framework initialization hook
+┌──────────────────────────────┐
+│      Frontend (Expo/RN)      │
+│  React Native + TypeScript   │
+│  Expo Router · LinearGradient│
+│  Glossy UI · Animations      │
+└──────────┬───────────────────┘
+           │ REST API (HTTP)
+           │ /chat  /emotion/analyze  /safety/check
+┌──────────▼───────────────────┐
+│      Backend (FastAPI)       │
+│  Sentiment Model (TF-IDF)   │
+│  Emotion Engine (8 emotions) │
+│  Situation Detector (8 types)│
+│  Decision Engine (contextual)│
+│  Safety Check (crisis flags) │
+└──────────────────────────────┘
 ```
 
-## Color Palette
+## 🛠️ Tech Stack
 
-### Light Mode
-- Background: `#F8F9FB`
-- Surface: `#FFFFFF`
-- Primary: `#9DB4CE` (Soft blue)
-- Secondary: `#C8B6D9` (Lavender)
-- Accent: `#E8D5C4` (Warm neutral)
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React Native (Expo SDK 54), TypeScript, Expo Router |
+| **UI** | LinearGradient, Animated API, Glassmorphism, Lucide Icons |
+| **Backend** | Python 3.11+, FastAPI, Uvicorn |
+| **ML** | scikit-learn (TF-IDF + LinearSVC), keyword scoring engines |
+| **Tunnel** | ngrok (for mobile ↔ local backend) |
 
-### Dark Mode
-- Background: `#1A1F2E`
-- Surface: `#252B3B`
-- Primary: `#9DB4CE` (Soft blue)
-- Secondary: `#B8A5C7` (Lavender)
-- Accent: `#D4BCA8` (Warm neutral)
+## 📂 Project Structure
 
-## Running the App
+```
+AI-chatbot-under-wellness/
+├── frontend/               # React Native (Expo) mobile app
+│   ├── app/                # Screens (Expo Router)
+│   ├── components/         # Reusable UI components
+│   ├── constants/          # Theme, colors, design tokens
+│   ├── services/           # API service layer
+│   └── .env                # API URL configuration
+├── backend/                # FastAPI backend
+│   ├── app/
+│   │   ├── api/            # REST endpoints (chat, emotion, safety)
+│   │   ├── ml/             # ML models + decision engine
+│   │   ├── schemas/        # Pydantic request/response models
+│   │   └── core/           # Config
+│   └── requirements.txt
+└── README.md               # This file
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18+
+- Python 3.11+
+- Expo Go app (on your phone)
+- ngrok (for mobile testing)
+
+### 1. Backend
 
 ```bash
-# Install dependencies
-npm install
-
-# Start the development server
-npm run dev
-
-# Type check
-npm run typecheck
-
-# Build for web
-npm run build:web
+cd backend
+python -m venv venv
+venv\Scripts\activate          # Windows
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+# → Running on http://127.0.0.1:8000
 ```
 
-## Important Notes
+### 2. Tunnel (for mobile)
 
-- **No Backend**: This is a frontend-only app with mocked data
-- **Not Therapy**: Clear disclaimers that this is not a replacement for professional help
-- **Privacy-First**: All conversations are local, no data sharing
-- **Placeholder Data**: Crisis resources use placeholder numbers
+```bash
+ngrok http 8000
+# Copy the https://xxxxx.ngrok-free.dev URL
+```
 
-## Ethical Considerations
+### 3. Frontend
 
-This app is designed with emotional safety as a priority:
-- Clear boundaries about what the app can and cannot do
-- No medical advice or therapy claims
-- Prominent crisis support resources
-- Respectful, non-judgmental language
-- User privacy and data control
+```bash
+cd frontend
+npm install
+
+# Update .env with your ngrok URL
+# EXPO_PUBLIC_API_URL=https://xxxxx.ngrok-free.dev
+
+npx expo start -c
+# Scan QR code with Expo Go
+```
+
+## 🎨 Design
+
+- **Light theme:** Vivid purple (`#7C5CFC`) + pink + coral accents on soft lavender background
+- **Dark theme:** Deep indigo (`#0E0A1E`) + bright lavender + neon pink
+- **Glossy finish:** Semi-transparent highlight overlays on all surfaces
+- **Animations:** Pulsing icons, bounce effects, fade/slide transitions, glowing buttons
+- **Glass effects:** Translucent tab bar, frosted disclaimer boxes
+
+## 🤖 ML Pipeline
+
+1. **Preprocessing** — Lowercase, remove URLs/numbers/punctuation
+2. **Sentiment Analysis** — TF-IDF + LinearSVC trained on mental health dataset (31MB, multi-class)
+3. **Emotion Detection** — Keyword scoring engine: `happy`, `sad`, `anxious`, `angry`, `tired`, `lonely`, `calm`, `hopeful`
+4. **Situation Detection** — Keyword scoring: `academic_stress`, `work_stress`, `relationship_issues`, `loneliness`, `grief`, `financial_stress`, `health_anxiety`, `general`
+5. **Decision Engine** — 5 contextual response variants per emotion + situation follow-ups
+6. **Safety Check** — Crisis flags: `self_harm`, `hopelessness`, `isolation`, `substance`, `crisis`
+
+## 📝 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/chat` | Send message → get reply + emotion + actions |
+| `POST` | `/emotion/analyze` | Analyze text → sentiment + emotion + confidence |
+| `POST` | `/safety/check` | Check text → risk level + flags + recommendation |
+| `GET` | `/` | Health check |
+
+## ⚖️ Ethical Considerations
+
+- Clear boundaries — not therapy, not medical advice
+- Crisis resources prominently displayed
+- No data collection or sharing
+- Respectful, non-judgmental language throughout
+- User controls all data (delete, incognito mode)
+
+## 📄 License
+
+This project is for educational purposes.

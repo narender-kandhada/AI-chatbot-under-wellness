@@ -2,17 +2,24 @@
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
 
+export interface HistoryMessage {
+  role: "user" | "ai";
+  text: string;
+}
+
 export interface ChatRequest {
   message: string;
-  mood?: string;        // optional user-selected mood
-  timestamp?: string;
+  mood?: string;
+  session_id?: string;
+  history?: HistoryMessage[];
 }
 
 export interface ChatResponse {
   reply: string;
   emotion: string;
   confidence: number;
-  actions?: string[];   // breathing, reflection, music, etc.
+  actions?: string[];
+  source?: string;  // "smart_templates" or "gemini"
 }
 
 export async function sendMessageToCompanion(

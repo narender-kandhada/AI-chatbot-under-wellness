@@ -1,131 +1,68 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  useColorScheme,
-  ScrollView,
-} from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, useColorScheme } from 'react-native';
 import { router } from 'expo-router';
+import { CalmBackground } from '../components/AmbientBackground';
 import { Button } from '../components/Button';
-import { colors, spacing, typography } from '../constants/theme';
-import { Heart } from 'lucide-react-native';
+import { colors, spacing, typography, borderRadius } from '../constants/theme';
 
 export default function WelcomeScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = colors[scheme];
+  const fadeTitle = useRef(new Animated.Value(0)).current;
+  const fadeContent = useRef(new Animated.Value(0)).current;
+  const fadeBtn = useRef(new Animated.Value(0)).current;
+  const slideUp = useRef(new Animated.Value(20)).current;
 
-  const handleGetStarted = () => {
-    router.push({ pathname: '(tabs)' } as any);
-  };
+  useEffect(() => {
+    Animated.stagger(300, [
+      Animated.parallel([
+        Animated.timing(fadeTitle, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(slideUp, { toValue: 0, duration: 700, useNativeDriver: true }),
+      ]),
+      Animated.timing(fadeContent, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.timing(fadeBtn, { toValue: 1, duration: 600, useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      contentContainerStyle={styles.content}
-    >
-      <View style={styles.header}>
-        <View
-          style={[
-            styles.iconContainer,
-            { backgroundColor: theme.primary + '20' },
-          ]}
-        >
-          <Heart size={48} color={theme.primary} strokeWidth={2} />
-        </View>
-
-        <Text style={[styles.appName, { color: theme.text }]}>
-          InnerCircle
-        </Text>
-
-        <Text style={[styles.tagline, { color: theme.textSecondary }]}>
-          A safe place to talk.{'\n'}A companion that listens.
-        </Text>
-      </View>
-
-      <View style={styles.disclaimerContainer}>
-        <View
-          style={[
-            styles.disclaimerBox,
-            {
-              backgroundColor: theme.surfaceSecondary,
-              borderColor: theme.border,
-            },
-          ]}
-        >
-          <Text style={[styles.disclaimerTitle, { color: theme.text }]}>
-            Welcome to your space
+    <CalmBackground>
+      <View style={styles.container}>
+        <Animated.View style={[styles.header, { opacity: fadeTitle, transform: [{ translateY: slideUp }] }]}>
+          <Text style={styles.leaf}>🌿</Text>
+          <Text style={[styles.welcome, { color: theme.textSecondary }]}>Welcome to</Text>
+          <Text style={[styles.title, { color: theme.text }]}>InnerCircle</Text>
+          <Text style={[styles.tagline, { color: theme.textSecondary }]}>
+            A quiet, supportive place where you can{'\n'}breathe, reflect, and feel heard.
           </Text>
-          <Text style={[styles.disclaimerText, { color: theme.textSecondary }]}>
-            This app offers emotional support and self-reflection. It is not a
-            replacement for professional mental health care.
-          </Text>
-          <Text style={[styles.disclaimerText, { color: theme.textSecondary }]}>
-            If you&apos;re experiencing a crisis or need immediate help, please reach
-            out to a mental health professional or crisis helpline.
-          </Text>
-        </View>
-      </View>
+        </Animated.View>
 
-      <View style={styles.buttonContainer}>
-        <Button title="Get Started" onPress={handleGetStarted} fullWidth />
+        <Animated.View style={[styles.disclaimerBox, { opacity: fadeContent, backgroundColor: theme.surface, borderColor: theme.borderLight }]}>
+          <Text style={[styles.disclaimerTitle, { color: theme.textSecondary }]}>Before we begin</Text>
+          <Text style={[styles.disclaimerText, { color: theme.textLight }]}>
+            InnerCircle is a supportive companion — not a therapist or doctor. If you're in crisis, please reach out to a professional. 💚
+          </Text>
+        </Animated.View>
+
+        <Animated.View style={[styles.buttonContainer, { opacity: fadeBtn }]}>
+          <Button title="Let's begin" onPress={() => router.replace('(tabs)' as any)} fullWidth />
+        </Animated.View>
       </View>
-    </ScrollView>
+    </CalmBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl * 2,
-    paddingBottom: spacing.xl,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xxl,
-  },
-  iconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xl,
-  },
-  appName: {
-    fontSize: typography.sizes.huge,
-    fontWeight: '700',
-    marginBottom: spacing.md,
-  },
-  tagline: {
-    fontSize: typography.sizes.lg,
-    textAlign: 'center',
-    lineHeight: typography.sizes.lg * typography.lineHeights.relaxed,
-  },
-  disclaimerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl },
+  header: { alignItems: 'center', marginBottom: spacing.xl },
+  leaf: { fontSize: 52, marginBottom: spacing.md },
+  welcome: { fontSize: typography.sizes.lg, fontWeight: '500', marginBottom: spacing.xs },
+  title: { fontSize: typography.sizes.huge, fontWeight: '800', letterSpacing: -0.5, marginBottom: spacing.lg },
+  tagline: { fontSize: typography.sizes.base, textAlign: 'center', lineHeight: typography.sizes.base * 1.7 },
   disclaimerBox: {
-    padding: spacing.lg,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: borderRadius.xl, padding: spacing.lg, marginBottom: spacing.xl, width: '100%',
+    borderWidth: 1, shadowColor: 'rgba(0,0,0,0.05)', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 1, shadowRadius: 10, elevation: 2,
   },
-  disclaimerTitle: {
-    fontSize: typography.sizes.xl,
-    fontWeight: '600',
-    marginBottom: spacing.md,
-  },
-  disclaimerText: {
-    fontSize: typography.sizes.base,
-    lineHeight: typography.sizes.base * typography.lineHeights.relaxed,
-    marginBottom: spacing.md,
-  },
-  buttonContainer: {
-    marginTop: spacing.xl,
-  },
+  disclaimerTitle: { fontSize: typography.sizes.sm, fontWeight: '700', marginBottom: spacing.sm },
+  disclaimerText: { fontSize: typography.sizes.sm, lineHeight: typography.sizes.sm * 1.7 },
+  buttonContainer: { width: '100%' },
 });

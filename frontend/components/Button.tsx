@@ -1,12 +1,8 @@
-import React from 'react';
-import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  useColorScheme,
-  ActivityIndicator,
-} from 'react-native';
-import { colors, spacing, borderRadius, typography } from '../constants/theme';
+import React, { useRef } from 'react';
+import { Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, useColorScheme } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import { colors, gradients, spacing, typography, borderRadius } from '../constants/theme';
 
 interface ButtonProps {
   title: string;
@@ -18,101 +14,93 @@ interface ButtonProps {
 }
 
 export function Button({
-  title,
-  onPress,
-  variant = 'primary',
-  disabled = false,
-  loading = false,
-  fullWidth = false,
+  title, onPress, variant = 'primary', disabled = false, loading = false, fullWidth = false,
 }: ButtonProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = colors[scheme];
+  const grad = gradients[scheme];
+  const scale = useRef(new Animated.Value(1)).current;
 
-  const getButtonStyle = () => {
-    if (disabled || loading) {
-      return [
-        styles.button,
-        { backgroundColor: theme.border },
-        fullWidth && styles.fullWidth,
-      ];
-    }
-
-    switch (variant) {
-      case 'primary':
-        return [
-          styles.button,
-          { backgroundColor: theme.primary },
-          fullWidth && styles.fullWidth,
-        ];
-      case 'secondary':
-        return [
-          styles.button,
-          { backgroundColor: theme.secondary },
-          fullWidth && styles.fullWidth,
-        ];
-      case 'ghost':
-        return [
-          styles.button,
-          styles.ghostButton,
-          { borderColor: theme.border },
-          fullWidth && styles.fullWidth,
-        ];
-      default:
-        return [
-          styles.button,
-          { backgroundColor: theme.primary },
-          fullWidth && styles.fullWidth,
-        ];
-    }
+  const handlePressIn = () => {
+    Animated.timing(scale, { toValue: 0.97, duration: 120, useNativeDriver: true }).start();
+  };
+  const handlePressOut = () => {
+    Animated.timing(scale, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+  };
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onPress();
   };
 
-  const getTextStyle = () => {
-    if (disabled || loading) {
-      return [styles.buttonText, { color: theme.textLight }];
-    }
+  if (variant === 'ghost') {
+    return (
+      <Animated.View style={[{ transform: [{ scale }] }, fullWidth && styles.fullWidth]}>
+        <TouchableOpacity
+          onPress={handlePress} disabled={disabled || loading}
+          onPressIn={handlePressIn} onPressOut={handlePressOut}
+          style={[styles.ghost, { borderColor: theme.primary + '30' }, disabled && styles.disabled]}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.ghostText, { color: theme.primary }]}>{title}</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
 
-    switch (variant) {
-      case 'ghost':
-        return [styles.buttonText, { color: theme.text }];
-      default:
-        return [styles.buttonText, { color: '#FFFFFF' }];
-    }
-  };
+  if (variant === 'secondary') {
+    return (
+      <Animated.View style={[{ transform: [{ scale }] }, fullWidth && styles.fullWidth]}>
+        <TouchableOpacity
+          onPress={handlePress} disabled={disabled || loading}
+          onPressIn={handlePressIn} onPressOut={handlePressOut}
+          style={[styles.secondaryBtn, { backgroundColor: theme.surfaceTint, borderColor: theme.border }, disabled && styles.disabled]}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.secondaryText, { color: theme.primary }]}>{title}</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  }
 
   return (
-    <TouchableOpacity
-      style={getButtonStyle()}
-      onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.7}
-    >
-      {loading ? (
-        <ActivityIndicator color="#FFFFFF" />
-      ) : (
-        <Text style={getTextStyle()}>{title}</Text>
-      )}
-    </TouchableOpacity>
+    <Animated.View style={[
+      { transform: [{ scale }] }, fullWidth && styles.fullWidth,
+      { shadowColor: theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
+    ]}>
+      <TouchableOpacity
+        onPress={handlePress} disabled={disabled || loading}
+        onPressIn={handlePressIn} onPressOut={handlePressOut}
+        style={[styles.base, disabled && styles.disabled]}
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={disabled ? ['#888', '#888'] : [...grad.buttonPrimary] as [string, string]}
+          style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+        >
+          {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.text}>{title}</Text>}
+        </LinearGradient>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 52,
+  base: { borderRadius: borderRadius.full, overflow: 'hidden' },
+  fullWidth: { width: '100%' },
+  disabled: { opacity: 0.5 },
+  gradient: {
+    paddingVertical: spacing.md, paddingHorizontal: spacing.xl,
+    alignItems: 'center', justifyContent: 'center', borderRadius: borderRadius.full,
   },
-  fullWidth: {
-    width: '100%',
+  text: { color: '#FFFFFF', fontSize: typography.sizes.lg, fontWeight: '700' },
+  ghost: {
+    borderWidth: 1, borderRadius: borderRadius.full,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.xl, alignItems: 'center',
   },
-  ghostButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
+  ghostText: { fontSize: typography.sizes.lg, fontWeight: '600' },
+  secondaryBtn: {
+    borderWidth: 1, borderRadius: borderRadius.full,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.xl, alignItems: 'center',
   },
-  buttonText: {
-    fontSize: typography.sizes.lg,
-    fontWeight: '600',
-  },
+  secondaryText: { fontSize: typography.sizes.lg, fontWeight: '600' },
 });
