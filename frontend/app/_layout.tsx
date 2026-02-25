@@ -15,6 +15,9 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="chat" />
         <Stack.Screen name="reflection" />
+        <Stack.Screen name="breathing" />
+        <Stack.Screen name="meditation" />
+        <Stack.Screen name="journal" />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />

@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { View, StyleSheet, useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { Home, Shield, AlertCircle } from 'lucide-react-native';
+import { Home, BarChart3, AlertCircle } from 'lucide-react-native';
 import { colors } from '../../constants/theme';
 
 function TabIcon({ focused, color, Icon, size }: {
@@ -53,10 +53,10 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="privacy"
+          name="insights"
           options={{
-            title: 'Privacy',
-            tabBarIcon: ({ size, color, focused }) => <TabIcon Icon={Shield} size={size} color={color} focused={focused} />,
+            title: 'Insights',
+            tabBarIcon: ({ size, color, focused }) => <TabIcon Icon={BarChart3} size={size} color={color} focused={focused} />,
           }}
         />
         <Tabs.Screen

@@ -1,14 +1,20 @@
+# ─── Core ─────────────────────────────────────────────
 fastapi
 uvicorn
 pydantic
+pydantic_settings
+python-dotenv
+
+# ─── ML / Data ────────────────────────────────────────
 numpy
 pandas
 scikit-learn
-pydantic_settings
 joblib
-scikit-learn
+
+# ─── Visualization (training only) ────────────────────
 seaborn
 matplotlib
 openpyxl
+
+# ─── AI ───────────────────────────────────────────────
 google-generativeai
-python-dotenv

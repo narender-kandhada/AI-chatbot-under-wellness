@@ -1,43 +1,53 @@
-# dependencies
-node_modules/
+# ─── Python ───────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+*.egg
 
-# Expo
+# ─── Node / Frontend ─────────────────────────────────
+node_modules/
 .expo/
 dist/
 web-build/
-
-# native
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# metro
-.metro-health-check*
-
-# logs & debug
-*.log
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env
-.env*.local
-
-# TypeScript
 *.tsbuildinfo
 
-# Python virtual environments
-venv/
-.venv/
-env/
-ENV/
+# ─── Android / iOS builds ────────────────────────────
+android/app/build/
+ios/build/
 
-# Editor
+# ─── Environment / Secrets ────────────────────────────
+.env
+.env.local
+.env.production
+backend/.env
+frontend/.env
+
+# ─── IDE ──────────────────────────────────────────────
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── OS ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── ML Models (large) ───────────────────────────────
+*.pkl
+*.joblib
+backend/app/ml/data/*.csv
+
+# ─── Logs ─────────────────────────────────────────────
+*.log
+npm-debug.log*
+
+# ─── ngrok ────────────────────────────────────────────
+ngrok.exe
+ngrok

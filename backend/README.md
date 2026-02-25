@@ -1,20 +1,21 @@
 # 🐍 InnerCircle Backend
 
-FastAPI backend with ML-powered emotion detection, sentiment analysis, and contextual response generation.
+FastAPI backend with ML-powered emotion detection, Gemini AI booster, and contextual response generation.
 
 ## 🚀 Setup
 
 ```bash
-# Create virtual environment
 python -m venv venv
 venv\Scripts\activate          # Windows
 source venv/bin/activate       # macOS/Linux
 
-# Install dependencies
 pip install -r requirements.txt
 
+# Create .env with your Gemini API key
+echo GEMINI_API_KEY=your_key_here > .env
+
 # Start server
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 # → http://127.0.0.1:8000
 # → Docs: http://127.0.0.1:8000/docs
 ```
@@ -24,72 +25,66 @@ uvicorn app.main:app --reload
 ```
 app/
 ├── api/
-│   ├── chat.py             # POST /chat — main conversation endpoint
-│   ├── emotion.py          # POST /emotion/analyze — emotion analysis
-│   └── safety.py           # POST /safety/check — crisis detection
+│   ├── chat.py             # POST /chat — hybrid router (templates + Gemini)
+│   ├── emotion.py          # POST /emotion/analyze
+│   └── safety.py           # POST /safety/check
 ├── ml/
-│   ├── preprocessing.py    # Text cleaning (lowercase, remove URLs/punct)
-│   ├── sentiment_model.py  # TF-IDF + LinearSVC sentiment classifier
-│   ├── emotion_model.py    # Keyword scoring engine (8 emotions)
-│   ├── situation_model.py  # Keyword scoring engine (8 situations)
-│   ├── decision_engine.py  # Contextual response generator
-│   ├── models/
-│   │   └── sentiment.pkl   # Trained sentiment model
-│   ├── data/
-│   │   ├── mental_health_dataset.csv  # 31MB training dataset
-│   │   └── sentiment_dataset.csv      # Small sentiment samples
-│   └── train/
-│       └── train_sentiment.py         # Model training script
+│   ├── preprocessing.py    # Text cleaning
+│   ├── sentiment_model.py  # TF-IDF + LinearSVC classifier
+│   ├── emotion_model.py    # Keyword scoring (8 emotions)
+│   ├── situation_model.py  # Keyword scoring (8 situations)
+│   ├── decision_engine.py  # Smart router → Gemini or templates
+│   ├── gemini_service.py   # Gemini 2.0 Flash integration
+│   ├── conversation_memory.py # Session-based history tracking
+│   ├── keyword_extractor.py   # Topic extraction
+│   └── models/
+│       └── sentiment.pkl   # Trained sentiment model
 ├── schemas/
 │   ├── chat.py             # ChatRequest / ChatResponse
 │   └── emotion.py          # EmotionRequest / EmotionResponse
 ├── core/
-│   └── config.py           # App settings
-└── main.py                 # FastAPI app + CORS middleware
+│   └── config.py           # Settings (GEMINI_API_KEY, etc.)
+└── main.py                 # FastAPI app + CORS
 ```
 
-## 🤖 ML Models
+## 🤖 Hybrid Response System
 
-### Sentiment Analysis
-- **Type:** TF-IDF vectorizer + LinearSVC classifier
-- **Training data:** `mental_health_dataset.csv` (31MB, labeled mental health statements)
-- **Output:** `positive` / `negative` + confidence score
-- **Training:** `python -m app.ml.train.train_sentiment`
+### Flow
+```
+User message → ML Pipeline → Decision Engine
+                                 ├── Simple (greetings, yes/no) → Templates
+                                 └── Complex (>3 words, ongoing chat) → Gemini
+```
 
-### Emotion Detection
-- **Type:** Keyword + pattern scoring engine
-- **Emotions:** `happy`, `sad`, `anxious`, `angry`, `tired`, `lonely`, `calm`, `hopeful`
-- **Method:** 30+ weighted keywords per emotion, multi-word phrases score 2x
-- **Fallback:** Returns `calm` (0.35 confidence) when no keywords match
+### Decision Engine Routing
+| Condition | Route |
+|-----------|-------|
+| Greetings ("hi", "hey") | Templates (instant) |
+| Short affirmations ("yes", "ok") | Templates (instant) |
+| Messages >3 words | **Gemini** (contextual) |
+| Conversation 4+ messages | **Gemini** (context-aware) |
+| Negative emotion detected | **Gemini** (empathetic) |
 
-### Situation Detection
-- **Type:** Keyword scoring engine
-- **Situations:** `academic_stress`, `work_stress`, `relationship_issues`, `loneliness`, `grief`, `financial_stress`, `health_anxiety`, `general`
-- **Method:** 25+ keywords per situation, highest score wins
-
-### Decision Engine
-- **5 response variants** per emotion (randomly selected for variety)
-- **Situation follow-ups** appended 60% of the time
-- **Action suggestions** per emotion (breathing, journaling, grounding, etc.)
-
-### Safety Check
-- **5 flag categories:** `self_harm`, `hopelessness`, `isolation`, `substance`, `crisis`
-- **Risk levels:** `low` → `medium` → `high`
-- **Escalation:** Any self-harm or crisis flag → high risk; 2+ flags → high risk
+### Gemini Booster
+- **Model:** Gemini 2.0 Flash
+- **Rate limit:** 12 calls/min, 1000/day (within free tier)
+- **System prompt:** Warm wellness companion personality
+- **Fallback:** Templates used if Gemini fails/rate-limited
 
 ## 📡 API Reference
 
-### `POST /chat`
+### `POST /chat/`
 ```json
 // Request
-{ "message": "I feel anxious about my exam", "mood": "anxious" }
+{ "message": "I feel anxious about my exam", "mood": "anxious", "session_id": "abc123" }
 
 // Response
 {
   "reply": "I can understand why that would make you feel anxious...",
   "emotion": "anxious",
   "confidence": 0.45,
-  "actions": ["breathing", "grounding", "meditation"]
+  "actions": ["breathing", "grounding", "meditation"],
+  "source": "gemini"
 }
 ```
 
@@ -115,25 +110,12 @@ app/
 }
 ```
 
-## 📊 Terminal Logging
-
-All endpoints log to the terminal for easy debugging:
-
-```
-============================================================
-📩 USER:       I feel anxious about my exam
-🧹 CLEANED:    i feel anxious about my exam
-💭 SENTIMENT:  negative (0.82)
-🎭 EMOTION:    anxious (0.45)
-📍 SITUATION:  academic_stress
-🤖 REPLY:      I can understand why that would make you feel...
-⚡ ACTIONS:    ['breathing', 'grounding', 'meditation']
-============================================================
-🛡️ SAFETY CHECK: 'I feel anxious about my exam' → risk=low, flags=[]
-```
-
 ## 🔧 Environment
 
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `GEMINI_API_KEY` | Google AI Studio API key | Yes |
+
 - Python 3.11+
-- CORS enabled for all origins (configure for production)
-- Auto-reload on file changes with `--reload` flag
+- CORS enabled for all origins
+- Auto-reload with `--reload` flag

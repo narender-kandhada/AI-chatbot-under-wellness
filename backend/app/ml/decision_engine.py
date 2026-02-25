@@ -363,31 +363,37 @@ def decide_response(
     if topics:
         primary_topic = topics[0]
         topic_templates = TOPIC_RESPONSES.get(primary_topic, {})
-        emotion_templates = topic_templates.get(emotion, topic_templates.get("calm", []))
+        emotion_templates = topic_templates.get(emotion, [])
 
-        if emotion_templates:
+        # Only use topic templates if we have HIGH confidence in the emotion
+        if emotion_templates and not is_short:
             reply = random.choice(emotion_templates)
             actions = EMOTION_ACTIONS.get(emotion, [])
             return reply, actions, False
 
-    # ─── 4. CHECK IF MESSAGE IS TOO COMPLEX FOR TEMPLATES ────────
-    # Long messages with deep emotional content → route to Gemini
+    # ─── 4. CHECK IF MESSAGE SHOULD GO TO GEMINI ─────────────────
+    # Route to Gemini aggressively for better contextual responses
     word_count = len(user_message.split())
-    has_depth = word_count > 15
-    is_multi_topic = len(topics) >= 2
-    is_deep_emotion = emotion in ("sad", "lonely", "anxious") and word_count > 8
-    conversation_is_deep = len(history) >= 6
+    conversation_is_going = len(history) >= 4
+    has_any_substance = word_count > 3
+    is_not_just_ok = not (words & SHORT_OK_PATTERNS or words & SHORT_AFFIRM_PATTERNS or words & SHORT_DENY_PATTERNS)
 
-    needs_gemini = (has_depth and is_deep_emotion) or (is_multi_topic and has_depth) or (conversation_is_deep and has_depth)
+    # Route to Gemini if:
+    # - Message has substance (>3 words) and isn't a simple greeting, OR
+    # - Conversation has been going for a while (context matters), OR
+    # - Message has any emotional indicators
+    needs_gemini = (
+        (has_any_substance and is_not_just_ok) or
+        (conversation_is_going and word_count > 2) or
+        (emotion in ("sad", "lonely", "anxious", "angry") and word_count > 2)
+    )
 
     if needs_gemini:
-        # Signal to the router that this should go to Gemini
-        # Still return a fallback in case Gemini fails
         fallback = random.choice(GENERIC_RESPONSES.get(emotion, GENERIC_RESPONSES["calm"]))
         actions = EMOTION_ACTIONS.get(emotion, [])
         return fallback, actions, True
 
-    # ─── 5. GENERIC EMOTION RESPONSE ─────────────────────────────
+    # ─── 5. GENERIC EMOTION RESPONSE (only for very short/simple) ─
     responses = GENERIC_RESPONSES.get(emotion, GENERIC_RESPONSES["calm"])
     reply = random.choice(responses)
 

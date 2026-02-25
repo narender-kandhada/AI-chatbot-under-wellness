@@ -1,6 +1,6 @@
 # 📱 InnerCircle Frontend
 
-React Native (Expo) mobile app with glossy UI, gradient effects, animations, and full backend API integration.
+React Native (Expo) mobile app with voice input/output, Gemini Live-style experience, glossy UI, and full backend integration.
 
 ## 🚀 Setup
 
@@ -8,98 +8,110 @@ React Native (Expo) mobile app with glossy UI, gradient effects, animations, and
 npm install
 
 # Configure backend URL
-# Edit .env:
-# EXPO_PUBLIC_API_URL=https://your-ngrok-url.ngrok-free.dev
+echo EXPO_PUBLIC_API_URL=https://your-ngrok-url.ngrok-free.dev > .env
 
-npx expo start -c
-# Scan QR with Expo Go (Android/iOS)
+# First time: build dev client (required for native modules)
+npx expo run:android
+
+# Subsequent: just start Metro
+npx expo start -c --dev-client
 ```
+
+> **Important:** Use dev build, NOT Expo Go. Native modules (`expo-speech-recognition`) require compilation.
 
 ## 📂 Structure
 
 ```
 app/
 ├── (tabs)/
-│   ├── _layout.tsx         # Glossy glass tab bar with dot indicators
-│   ├── index.tsx           # Check-In screen (mood selector + emotion API)
-│   ├── privacy.tsx         # Privacy & Trust screen
-│   └── crisis.tsx          # Crisis Support screen
+│   ├── _layout.tsx         # Glass tab bar with dot indicators
+│   ├── index.tsx           # Check-In (mood selector + emotion API)
+│   ├── privacy.tsx         # Privacy & Trust
+│   └── crisis.tsx          # Crisis Support + helplines
 ├── _layout.tsx             # Root Stack navigator
-├── welcome.tsx             # Onboarding (animated, gradient bg)
-├── chat.tsx                # AI Chat (safety check + emotion tags)
-└── reflection.tsx          # Reflection (emotion analysis banner)
+├── welcome.tsx             # Onboarding (animated)
+├── chat.tsx                # AI Chat + Voice + Live Mode
+├── journal.tsx             # Saved conversations
+├── breathing.tsx           # Breathing exercises
+├── meditation.tsx          # Guided meditation
+└── reflection.tsx          # Reflection & insights
 
 components/
-├── Button.tsx              # Gradient button + glossy overlay + scale animation
-├── Card.tsx                # Glossy card with accent strip + sheen
-├── ChatBubble.tsx          # Gradient bubbles + shine overlay + slide-in
-└── MoodSelector.tsx        # Mood grid with unique colors + bounce
+├── LiveOverlay.tsx          # Full-screen Gemini Live-style overlay
+├── ChatBubble.tsx           # Message bubbles with TTS speaker button
+├── AmbientBackground.tsx    # Animated calm background
+├── MoodSelector.tsx         # Mood grid with bounce animation
+├── Button.tsx               # Gradient button + glossy overlay
+└── Card.tsx                 # Glossy card with accent strip
 
-constants/
-└── theme.ts                # Design system (colors, gradients, glass tokens)
+hooks/
+└── useVoiceChat.ts          # STT/TTS + Live session state machine
 
 services/
-├── companion.service.ts    # POST /chat — main conversation
-├── emotion.service.ts      # POST /emotion/analyze — emotion detection
-└── safety.service.ts       # POST /safety/check — crisis detection
+├── companion.service.ts     # POST /chat
+├── emotion.service.ts       # POST /emotion/analyze
+├── safety.service.ts        # POST /safety/check
+└── storage.service.ts       # SQLite database (moods, chats, journal)
+
+constants/
+└── theme.ts                 # Design system (colors, spacing, typography)
 ```
+
+## 🎙️ Voice Features
+
+### Quick Mic (STT)
+- Tap 🎤 button → white modal → speak → auto-sends as text
+- Uses `expo-speech-recognition` (on-device STT)
+
+### Live Mode (Gemini Live-style)
+- Tap 📡 button → full-screen dark overlay
+- Animated blue/teal waveform (3 overlapping blobs)
+- **States:** listening → processing → speaking → listening (auto-loop)
+- Continuous STT (`continuous: true`) — minimal system sounds
+- On end: all messages sync to chat history
+
+### TTS
+- 🔊 toggle in header (enabled by default)
+- AI replies auto-read aloud via `expo-speech`
+- Tap speaker on any AI bubble to re-hear it
 
 ## 🎨 Design System
 
-### Colors
+### Colors (Nature/Wellness Theme)
 
 | | Light | Dark |
 |---|---|---|
-| **Primary** | `#7C5CFC` (vivid purple) | `#9B7FFF` (bright lavender) |
-| **Secondary** | `#E85D9C` (hot pink) | `#FF6BA6` (neon pink) |
-| **Background** | `#F5F0FF` (soft purple) | `#0E0A1E` (deep indigo) |
-| **Surface** | `#FFFFFF` | `#1A1434` (dark purple) |
+| **Primary** | `#6B8E6E` (sage green) | `#8FB996` |
+| **Background** | `#F7F5F0` (warm cream) | `#1A1A1A` |
+| **Surface** | `#FFFFFF` | `#2A2A2A` |
 
-### Glossy Effects
-Every interactive surface has a semi-transparent white gradient overlay (top 40-50%) creating a polished glass-like shine.
-
-### Animations
-- Pulsing heart icon (Welcome)
-- Bounce + scale on mood selection
-- Fade + slide-in on chat messages
-- Glowing send button pulse
-- Typing indicator (3 bouncing dots)
+### Live Overlay
+- Background: `#060612` (near-black blue)
+- Waveform: Blue (#1976D2) → Teal (#00ACC1) → Cyan (#26C6DA) blobs
+- End button: Red (#D32F2F)
 
 ## 📡 Backend Integration
 
 | Screen | API Calls |
 |--------|-----------|
-| **Chat** | `POST /chat` + `POST /safety/check` (parallel) |
-| **Check-In** | `POST /emotion/analyze` (on additional thoughts) |
-| **Reflection** | `POST /emotion/analyze` (on load) |
-
-### Safety Alert
-When `/safety/check` returns `riskLevel: "high"`, a modal appears with:
-- Crisis warning message
-- Link to Support tab
-- "Continue chatting" dismiss option
-
-### Emotion Tags
-AI chat responses show a small tag below the bubble:
-- 🌊 Feeling anxious
-- 😊 Feeling happy
-- 💙 Feeling sad
-- etc.
+| **Chat** | `POST /chat/` + `POST /safety/check` (parallel) |
+| **Chat (Live)** | Same — routes through existing HTTP endpoints |
+| **Check-In** | `POST /emotion/analyze` |
+| **Reflection** | `POST /emotion/analyze` |
 
 ## 🔧 Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `EXPO_PUBLIC_API_URL` | Backend API URL | `https://xxx.ngrok-free.dev` |
+| `EXPO_PUBLIC_API_URL` | Backend API URL (via ngrok) | `https://xxx.ngrok-free.dev` |
 
-## 📋 Screens Overview
+## 📋 Key Dependencies
 
-| Screen | Key Features |
-|--------|-------------|
-| **Welcome** | Full gradient bg, pulsing heart, staggered fade-in, glass disclaimer |
-| **Check-In** | Time-of-day greeting, mood selector, glossy input, emotion API |
-| **Chat** | Gradient header, glossy send button, typing dots, safety modal |
-| **Reflection** | Emotion banner, colored suggestion cards, gradient icons |
-| **Privacy** | Glossy principle cards, colored switch tracks, glass disclaimer |
-| **Crisis** | Warm gradient hero, accent resource cards, gradient reminder |
-| **Tab Bar** | Translucent glass, active dot indicators, purple shadow |
+| Package | Purpose |
+|---------|---------|
+| `expo-speech-recognition` | On-device Speech-to-Text |
+| `expo-speech` | Text-to-Speech playback |
+| `expo-sqlite` | Local SQLite database |
+| `expo-camera` | Camera access |
+| `lucide-react-native` | Icon library |
+| `react-native-reanimated` | Smooth animations |
