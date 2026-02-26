@@ -7,9 +7,27 @@ import { colors, spacing, typography, borderRadius } from '../../constants/theme
 import { Heart, Phone } from 'lucide-react-native';
 
 const resources = [
-  { id: '1', name: 'National Crisis Helpline', desc: 'Available 24/7 for immediate support', number: 'XXX-XXX-XXXX', color: '#E8B86D' },
-  { id: '2', name: 'Mental Health Support', desc: 'Trained counselors ready to help', number: 'XXX-XXX-XXXX', color: '#6B8E6E' },
-  { id: '3', name: 'Text Support Service', desc: 'Text-based crisis support', number: 'Text SUPPORT to XXXXX', color: '#7DB8A6' },
+  { 
+    id: '1', 
+    name: 'KIRAN Mental Health Helpline', 
+    desc: '24/7 Government of India mental health support', 
+    number: '1800-599-0019', 
+    color: '#E8B86D' 
+  },
+  { 
+    id: '2', 
+    name: 'iCall Psychosocial Helpline', 
+    desc: 'Professional counseling support (Mon–Sat, 8am–10pm)', 
+    number: '9152987821', 
+    color: '#6B8E6E' 
+  },
+  { 
+    id: '3', 
+    name: 'AASRA Suicide Prevention Helpline', 
+    desc: '24/7 crisis and emotional support', 
+    number: '91-9820466726', 
+    color: '#7DB8A6' 
+  },
 ];
 
 export default function CrisisScreen() {

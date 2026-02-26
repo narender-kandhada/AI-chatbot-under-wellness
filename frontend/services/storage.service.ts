@@ -46,6 +46,14 @@ export interface StreakData {
     totalCheckIns: number;
 }
 
+export interface NotificationSettings {
+    checkInEnabled: boolean;
+    checkInTime: string; // "HH:MM" e.g. "09:00"
+    mindfulnessEnabled: boolean;
+    mindfulnessIntervalHours: number; // 2-8
+    streakEnabled: boolean;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // DATABASE INIT
 // ═══════════════════════════════════════════════════════════════
@@ -110,6 +118,25 @@ function initTables(): void {
     const row = database.getFirstSync<{ cnt: number }>('SELECT COUNT(*) as cnt FROM streaks');
     if (!row || row.cnt === 0) {
         database.runSync('INSERT INTO streaks (id, current_streak, last_checkin_date, total_checkins) VALUES (1, 0, "", 0)');
+    }
+
+    database.execSync(`
+    CREATE TABLE IF NOT EXISTS notification_settings (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      check_in_enabled INTEGER NOT NULL DEFAULT 0,
+      check_in_time TEXT NOT NULL DEFAULT "09:00",
+      mindfulness_enabled INTEGER NOT NULL DEFAULT 0,
+      mindfulness_interval_hours INTEGER NOT NULL DEFAULT 3,
+      streak_enabled INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+
+    // Ensure notification_settings row exists
+    const notifRow = database.getFirstSync<{ cnt: number }>('SELECT COUNT(*) as cnt FROM notification_settings');
+    if (!notifRow || notifRow.cnt === 0) {
+        database.runSync(
+            'INSERT INTO notification_settings (id, check_in_enabled, check_in_time, mindfulness_enabled, mindfulness_interval_hours, streak_enabled) VALUES (1, 0, "09:00", 0, 3, 0)'
+        );
     }
 }
 
@@ -331,6 +358,56 @@ export async function getStreak(): Promise<StreakData> {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// NOTIFICATION SETTINGS
+// ═══════════════════════════════════════════════════════════════
+
+export async function getNotificationSettings(): Promise<NotificationSettings> {
+    try {
+        const database = getDb();
+        const row = database.getFirstSync<{
+            check_in_enabled: number; check_in_time: string;
+            mindfulness_enabled: number; mindfulness_interval_hours: number;
+            streak_enabled: number;
+        }>('SELECT * FROM notification_settings WHERE id = 1');
+
+        if (row) {
+            return {
+                checkInEnabled: row.check_in_enabled === 1,
+                checkInTime: row.check_in_time,
+                mindfulnessEnabled: row.mindfulness_enabled === 1,
+                mindfulnessIntervalHours: row.mindfulness_interval_hours,
+                streakEnabled: row.streak_enabled === 1,
+            };
+        }
+    } catch (e) {
+        console.error('Failed to get notification settings', e);
+    }
+    return {
+        checkInEnabled: false, checkInTime: "09:00",
+        mindfulnessEnabled: false, mindfulnessIntervalHours: 3,
+        streakEnabled: false
+    };
+}
+
+export async function saveNotificationSettings(settings: NotificationSettings): Promise<void> {
+    try {
+        const database = getDb();
+        database.runSync(
+            `UPDATE notification_settings SET 
+              check_in_enabled = ?, check_in_time = ?, 
+              mindfulness_enabled = ?, mindfulness_interval_hours = ?, 
+              streak_enabled = ?
+             WHERE id = 1`,
+            settings.checkInEnabled ? 1 : 0, settings.checkInTime,
+            settings.mindfulnessEnabled ? 1 : 0, settings.mindfulnessIntervalHours,
+            settings.streakEnabled ? 1 : 0
+        );
+    } catch (e) {
+        console.error('Failed to save notification settings', e);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════════════════════════
 
@@ -361,7 +438,7 @@ export async function exportAllData(): Promise<string> {
 // AFFIRMATIONS
 // ═══════════════════════════════════════════════════════════════
 
-const AFFIRMATIONS = [
+export const AFFIRMATIONS = [
     "You're doing better than you think. 🌿",
     "It's okay to have a slow day. 💚",
     "Your feelings are valid, always.",

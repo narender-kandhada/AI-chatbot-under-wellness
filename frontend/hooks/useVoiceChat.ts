@@ -1,6 +1,27 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
 import * as Speech from 'expo-speech';
+
+// ─── Safe imports for native-only modules ───────────────────────────────────
+// expo-speech-recognition requires a custom dev build (native module).
+// In Expo Go this module doesn't exist, so we fall back to no-op stubs
+// so the rest of the app can still load and run.
+
+let ExpoSpeechRecognitionModule: any = null;
+let useSpeechRecognitionEvent: (event: string, cb: (e?: any) => void) => void =
+    () => { };
+
+try {
+    const mod = require('expo-speech-recognition');
+    ExpoSpeechRecognitionModule = mod.ExpoSpeechRecognitionModule;
+    useSpeechRecognitionEvent = mod.useSpeechRecognitionEvent;
+} catch {
+    console.warn(
+        '[useVoiceChat] expo-speech-recognition native module not available. ' +
+        'Voice input requires a development build. Falling back to text-only mode.'
+    );
+}
+
+const isSpeechAvailable = !!ExpoSpeechRecognitionModule;
 
 export type LiveState = 'idle' | 'listening' | 'processing' | 'speaking';
 
@@ -32,9 +53,6 @@ export function useVoiceChat() {
 
     useSpeechRecognitionEvent('end', () => {
         setIsListening(false);
-        // Non-live mode: 'end' fires normally after user stops speaking
-        // Live mode with continuous: 'end' only fires if recognizer is
-        //   stopped manually or errors out — restart if still in session
         if (isLiveModeRef.current && liveStateRef.current === 'listening') {
             if (transcriptRef.current.trim()) {
                 setLiveState('processing');
@@ -46,24 +64,21 @@ export function useVoiceChat() {
         }
     });
 
-    useSpeechRecognitionEvent('result', (event) => {
-        const text = event.results[0]?.transcript || '';
+    useSpeechRecognitionEvent('result', (event: any) => {
+        const text = event?.results?.[0]?.transcript || '';
         setTranscript(text);
 
-        // In live continuous mode: use isFinal to trigger processing
-        // This avoids stopping/restarting the recognizer (no beep sounds)
         if (isLiveModeRef.current && liveStateRef.current === 'listening') {
-            const isFinal = event.isFinal ?? (event as any).results?.[0]?.isFinal;
+            const isFinal = event?.isFinal ?? event?.results?.[0]?.isFinal;
             if (isFinal && text.trim()) {
-                // Stop the recognizer silently before processing/TTS
-                try { ExpoSpeechRecognitionModule.stop(); } catch { }
+                try { ExpoSpeechRecognitionModule?.stop(); } catch { }
                 setLiveState('processing');
             }
         }
     });
 
-    useSpeechRecognitionEvent('error', (event) => {
-        console.warn('STT error:', event.error);
+    useSpeechRecognitionEvent('error', (event: any) => {
+        console.warn('STT error:', event?.error);
         setIsListening(false);
         if (isLiveModeRef.current) {
             setTimeout(() => {
@@ -74,8 +89,11 @@ export function useVoiceChat() {
 
     // ─── Core Audio Functions ───────────────────────────────────────────
 
-    // Non-live: short, auto-stops after silence
     const startListeningInternal = useCallback(async () => {
+        if (!isSpeechAvailable) {
+            console.warn('[useVoiceChat] Speech recognition not available (Expo Go). Use a dev build.');
+            return;
+        }
         const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
         if (!granted) return;
         try {
@@ -89,15 +107,15 @@ export function useVoiceChat() {
         }
     }, []);
 
-    // Live: continuous mode — stays active, no repeated start/stop beeps
     const startListeningLive = useCallback(async () => {
+        if (!isSpeechAvailable) return;
         const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
         if (!granted) return;
         try {
             ExpoSpeechRecognitionModule.start({
                 lang: 'en-US',
                 interimResults: true,
-                continuous: true,  // stays active — fewer beep sounds
+                continuous: true,
             });
         } catch (e) {
             console.warn('Start listening (live) error:', e);
@@ -109,7 +127,7 @@ export function useVoiceChat() {
     }, [startListeningInternal]);
 
     const stopListening = useCallback(() => {
-        try { ExpoSpeechRecognitionModule.stop(); } catch { }
+        try { ExpoSpeechRecognitionModule?.stop(); } catch { }
         setIsListening(false);
     }, []);
 
@@ -137,7 +155,6 @@ export function useVoiceChat() {
                 onDone: () => {
                     console.log('TTS: done');
                     setIsSpeaking(false);
-                    // In live mode → restart listening (live continuous mode)
                     if (isLiveModeRef.current) {
                         setTimeout(() => {
                             if (isLiveModeRef.current) startListeningLive();
@@ -161,6 +178,10 @@ export function useVoiceChat() {
 
     // ─── Live Session ───────────────────────────────────────────────────
     const startLiveSession = useCallback(async () => {
+        if (!isSpeechAvailable) {
+            console.warn('[useVoiceChat] Live session requires a dev build with expo-speech-recognition.');
+            return;
+        }
         Speech.stop();
         setIsLiveMode(true);
         isLiveModeRef.current = true;
@@ -168,7 +189,7 @@ export function useVoiceChat() {
         liveStateRef.current = 'listening';
         setTranscript('');
         transcriptRef.current = '';
-        await startListeningLive();  // continuous mode — one beep only
+        await startListeningLive();
     }, [startListeningLive]);
 
     const endLiveSession = useCallback(() => {
@@ -184,13 +205,15 @@ export function useVoiceChat() {
 
     // ─── Cleanup ────────────────────────────────────────────────────────
     useEffect(() => () => {
-        try { ExpoSpeechRecognitionModule.stop(); } catch { }
+        try { ExpoSpeechRecognitionModule?.stop(); } catch { }
         Speech.stop();
     }, []);
 
     return {
         isListening, transcript, isSpeaking, ttsEnabled,
         isLiveMode, liveState,
+        // Expose availability so the UI can show/hide mic buttons gracefully
+        isSpeechAvailable,
         startListening, stopListening, speak, stopSpeaking, toggleTTS,
         startLiveSession, endLiveSession,
     };

@@ -18,6 +18,7 @@ A modern, emotionally-intelligent wellness companion app with ML-powered emotion
 | **Emotion Detection** | Real-time sentiment + emotion analysis (8 categories) |
 | **Safety Monitoring** | Crisis language detection with support resources |
 | **Journal & Reflection** | Save conversations, get personalized insights |
+| **🔔 Local Notifications** | Privacy-preserving daily check-ins, mindful nudges, and streak reminders |
 | **SQLite Storage** | On-device database for moods, chats, journal entries |
 | **Privacy-First** | Local data, no tracking, no cloud storage |
 
@@ -50,6 +51,7 @@ A modern, emotionally-intelligent wellness companion app with ML-powered emotion
 | **Frontend** | React Native (Expo SDK 54), TypeScript, Expo Router |
 | **UI** | LinearGradient, Animated API, Glassmorphism, Lucide Icons |
 | **Voice** | `expo-speech-recognition` (STT), `expo-speech` (TTS) |
+| **Notifications** | `expo-notifications` (Local Push Notifications) |
 | **Storage** | `expo-sqlite` (on-device database) |
 | **Backend** | Python 3.11+, FastAPI, Uvicorn |
 | **ML** | scikit-learn (TF-IDF + LinearSVC), keyword scoring engines |
@@ -132,7 +134,18 @@ npx expo run:android
 npx expo start -c --dev-client
 ```
 
-> **Note:** You MUST use a dev build (`npx expo run:android`), not Expo Go, because `expo-speech-recognition` requires native modules.
+> **Note:** You MUST use a dev build (`npx expo run:android`), not Expo Go, because `expo-speech-recognition` and `expo-notifications` require native modules.
+
+## 🔔 Notification Features
+
+### Daily Check-In
+A subtle reminder containing a daily wellness quote. It schedules dynamically based on user-set times. 
+
+### Mindful Moments
+Periodic nudges occurring every N hours (e.g. 2h, 4h, 8h) reminding users to breathe.
+
+### Streak Saver
+An evening lifeline nudge at 8:00 PM ensuring users don’t lose their check-in streak.
 
 ## 🎙️ Voice Features
 

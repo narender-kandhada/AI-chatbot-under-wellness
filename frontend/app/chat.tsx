@@ -518,18 +518,22 @@ export default function ChatScreen() {
               </TouchableOpacity>
             ) : (
               <View style={styles.btnGroup}>
-                {/* Quick mic (non-live) */}
-                <TouchableOpacity onPress={handleMicPress} activeOpacity={0.7}
-                  style={[styles.sendBtn, { backgroundColor: voice.isListening ? theme.primary : theme.surfaceTint }]}
-                >
-                  <Mic size={20} color={voice.isListening ? '#FFFFFF' : theme.primary} />
-                </TouchableOpacity>
-                {/* Live mode button */}
-                <TouchableOpacity onPress={handleStartLive} activeOpacity={0.7}
-                  style={[styles.liveBtn, { borderColor: theme.primary }]}
-                >
-                  <Radio size={18} color={theme.primary} />
-                </TouchableOpacity>
+                {/* Quick mic (non-live) — only shown when native STT is present */}
+                {voice.isSpeechAvailable && (
+                  <TouchableOpacity onPress={handleMicPress} activeOpacity={0.7}
+                    style={[styles.sendBtn, { backgroundColor: voice.isListening ? theme.primary : theme.surfaceTint }]}
+                  >
+                    <Mic size={20} color={voice.isListening ? '#FFFFFF' : theme.primary} />
+                  </TouchableOpacity>
+                )}
+                {/* Live mode button — only shown when native STT is present */}
+                {voice.isSpeechAvailable && (
+                  <TouchableOpacity onPress={handleStartLive} activeOpacity={0.7}
+                    style={[styles.liveBtn, { borderColor: theme.primary }]}
+                  >
+                    <Radio size={18} color={theme.primary} />
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>
