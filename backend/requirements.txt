@@ -17,4 +17,5 @@ matplotlib
 openpyxl
 
 # ─── AI ───────────────────────────────────────────────
+google-genai
 google-generativeai

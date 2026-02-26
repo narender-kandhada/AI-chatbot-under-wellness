@@ -2,267 +2,246 @@
 Smart Decision Engine — Context-Aware Response Generator.
 
 Generates natural, human-like responses by:
-1. Extracting topics and keywords from the user's message
-2. Referencing conversation history for continuity
-3. Using topic-specific response templates with {topic} placeholders
-4. Asking natural follow-up questions about what the user actually said
+1. Detecting greetings and short messages with dedicated handlers
+2. Using topic + emotion combos for rich, specific responses
+3. Routing complex messages to Gemini when available
+4. Falling back to deep, empathetic generic responses
 
-This handles ~80% of messages offline. The remaining ~20% (complex/deep
-emotional conversations) get routed to Gemini via the hybrid router.
+The Gemini fallback when templates are used should NEVER feel cold or robotic.
 """
 import random
 from app.ml.keyword_extractor import get_topic_summary
 
 # ═══════════════════════════════════════════════════════════════════════
 # TOPIC-AWARE RESPONSE TEMPLATES
-# These reference what the user said via {phrase} placeholder
+# Rich, human-like, empathetic responses per topic+emotion combo
 # ═══════════════════════════════════════════════════════════════════════
 
 TOPIC_RESPONSES = {
     "relationship": {
         "happy": [
-            "Oh wow, that's a big deal! 💚 Tell me more, how did it go?",
-            "That's so exciting! I'm really happy for you! How are you feeling about it?",
-            "Aww that's amazing! 😊 What happened next?",
-            "Love hearing this! Sounds like things are going well for you!",
-            "That's wonderful! I can tell this means a lot to you. How did they react?",
+            "That's so exciting! Love hearing good news about you two. 💚 What happened?",
+            "Aww! That must feel amazing. Tell me everything — what did they do?",
+            "Oh wow, that sounds so sweet. You must be over the moon right now! 😊",
+            "I love that for you! This is just the beginning of something great. How are you feeling?",
         ],
         "sad": [
-            "That sounds really painful. Relationships can hurt so much. 💙 I'm here.",
-            "I'm sorry you're going through that. That takes a lot of courage to share.",
-            "Breakups are one of the hardest things. You don't have to be strong right now.",
-            "That must feel so heavy. How are you holding up?",
-            "I hear you. That kind of pain is real. Take your time.",
+            "That's really painful, and I'm so sorry you're going through this. 💙 Relationships can hurt so deeply.",
+            "I hear you. Heartbreak is one of the hardest things to carry. You don't have to pretend you're fine.",
+            "That must feel so heavy right now. It's okay to not be okay. What happened, if you feel like sharing?",
+            "I'm sorry. Whatever you're feeling right now — it's valid. I'm here with you.",
         ],
         "anxious": [
-            "Relationships can bring up so many worries. What's on your mind most?",
-            "That's totally normal to feel nervous about. What's your biggest concern?",
-            "I get that anxiety. One step at a time — you'll figure it out. 💚",
-            "It's natural to overthink these things. What does your gut tell you?",
+            "Relationship worries can keep you up at night, I get it. What's making you most anxious about it?",
+            "That kind of uncertainty is really hard. What is your gut feeling about the situation?",
+            "It's so normal to overthink this stuff. What's the thing you're most scared of right now?",
+        ],
+        "angry": [
+            "That does sound really unfair. Your frustration makes complete sense. What happened?",
+            "I'd feel the same way. That's not okay, and you have every right to be upset.",
+            "Yeah, that would make me angry too. Do you want to vent about it, or figure out what to do next?",
         ],
         "calm": [
-            "That's really nice! Sounds like things are good between you two. 😊",
-            "Aww, that's lovely to hear. How long has this been going on?",
-            "That sounds healthy and peaceful. I'm glad you shared that!",
+            "That's really nice! Sounds like things are good. How long has this been going on? 😊",
+            "Aww, I love hearing that. What do you like most about them?",
         ],
     },
     "studies": {
         "happy": [
-            "That's awesome! You must have worked so hard for this! 🎉 What subject?",
-            "Congratulations! All that effort paid off! How does it feel?",
-            "That's great news! I knew you could do it! 😊 What's next?",
-            "Wow, you should be really proud of yourself! Tell me more!",
+            "YES! That's amazing! 🎉 You worked so hard for this — you deserve it! What subject?",
+            "Look at you! I knew you could do it! How does it feel to have that off your plate?",
+            "That's such a relief, right? All that studying finally paid off! What's next for you?",
         ],
         "sad": [
-            "I'm sorry about that. Exams can be really stressful. 💙 One bad result doesn't define you.",
-            "That's tough, but this isn't the end. What are you thinking about doing next?",
-            "I hear you. Academic pressure is real. Remember — grades aren't everything.",
-            "That must be disappointing. But you know what? You learned from it. That counts.",
+            "I'm really sorry. One bad result doesn't define you at all — not even close. What happened?",
+            "That's tough, and it's okay to be upset about it. Grades can feel so high-stakes. How are you holding up?",
+            "Hey, this isn't the end. Seriously. What do you think went wrong — is there anything you can do now?",
         ],
         "anxious": [
-            "Exam stress is the worst. Have you been able to take any breaks?",
-            "That's a lot of pressure. What subject are you most worried about?",
-            "I totally get that. Would it help to talk about a study plan?",
-            "One exam at a time. You've got through tough things before. 💪",
+            "Exam stress is genuinely awful. Your brain is working overtime right now. What are you most worried about?",
+            "That kind of pressure is so real. Have you been able to take any breaks between studying?",
+            "One exam at a time. You've gotten through things like this before. What would help you right now?",
         ],
         "tired": [
-            "Studying is exhausting. Please make sure you're sleeping enough. 😴",
-            "You've been working so hard. It's okay to take a break, you know?",
-            "Don't burn yourself out. Rest is part of the process.",
+            "Studying is exhausting and your mind needs rest too. How long have you been at it?",
+            "Please don't burn yourself out. Sleep is actually part of studying — your brain needs it.",
+        ],
+        "angry": [
+            "School stuff can be so frustrating, especially when you've put in the work. What's going on?",
+            "That sounds really unfair. Is it the grade, or something that happened with a teacher?",
         ],
     },
     "work": {
         "happy": [
-            "That's great news about work! 🎉 What happened exactly?",
-            "Wow, sounds like things are going well! You deserve it!",
-            "That's amazing! I can tell you're proud of this. How does it feel?",
+            "That's great news! Work wins feel so good, especially when you've been grinding. What happened?",
+            "Love it! You deserve recognition for your work. How does your team feel about it?",
+            "Congrats! That kind of thing can really boost your motivation. How are you feeling? 🎉",
         ],
         "sad": [
-            "Work stuff can really get to you. I'm sorry you're dealing with that.",
-            "That sounds frustrating. You deserve better than that.",
-            "I hear you. Work pressure is no joke. What's been the hardest part?",
+            "Work stuff can really wear you down. I'm sorry you're dealing with that. What's been going on?",
+            "That sounds really heavy. A toxic workplace or a bad moment with your boss can shake you for days.",
+            "That must have stung. You deserved better than that. How long has this been building up?",
         ],
         "anxious": [
-            "Work anxiety is so common and totally valid. What's stressing you most?",
-            "That does sound overwhelming. Have you been able to talk to anyone about it?",
-            "One thing at a time. You don't have to solve everything today.",
+            "Work anxiety is so draining. It follows you everywhere, doesn't it? What's stressing you most right now?",
+            "That sounds like a lot of pressure. Are you feeling overwhelmed by the work itself, or something else?",
+            "One thing at a time — you don't have to solve it all today. What's the most urgent thing on your mind?",
         ],
         "angry": [
-            "That does sound really unfair. Your frustration is completely valid.",
-            "I'd be upset too. That's not okay. Have you thought about what you want to do?",
-            "I hear you. It's okay to be angry about this. What happened?",
+            "Your frustration is completely valid — that sounds really unfair. Was this your boss or a coworker?",
+            "I would be upset too. Being treated like that at work is not okay. What do you want to do about it?",
+            "That kind of disrespect is infuriating. You deserve a workplace where you feel valued.",
+        ],
+        "tired": [
+            "Work burnout is serious. It creeps up slowly and then hits hard. How long have you been feeling this way?",
+            "You've been carrying a lot. It's okay to admit that work is draining you right now.",
         ],
     },
     "family": {
         "happy": [
-            "Family moments like that are so special. 💚 What made it so nice?",
-            "That sounds really lovely! Family can be such a source of warmth.",
-            "Aww, that's heartwarming! Tell me more about it!",
+            "Family moments like that are so special 💚 What made it so nice?",
+            "That's really heartwarming. Family can be such a source of joy when things align.",
+            "Aww, I love that! What happened?",
         ],
         "sad": [
-            "Family issues hit different. I'm really sorry you're going through this. 💙",
-            "That sounds so hard. Home should feel safe. How are you coping?",
-            "I hear you. Family stuff is complicated. You don't have to face it alone.",
+            "Family pain hits differently — it's supposed to be the safe place. I'm sorry. What's going on?",
+            "That sounds really hard. Home should feel safe, and when it doesn't, it's exhausting. How are you doing?",
+            "I hear you. Family stuff is complicated and messy. You don't have to figure it all out right now.",
+        ],
+        "angry": [
+            "Family conflict is so emotionally draining because you can't just walk away. What happened?",
+            "That sounds infuriating. Family should support you, not make it harder. Are you okay?",
+        ],
+        "anxious": [
+            "Family situations can be really stressful to navigate. What's worrying you most right now?",
         ],
     },
     "achievement": {
         "happy": [
-            "THAT'S AMAZING! 🎉 You should be so proud! How did it happen?",
-            "Wow, congratulations!! That's a huge deal! How are you celebrating?",
-            "I'm genuinely so happy for you! You earned this! Tell me everything!",
-            "What an accomplishment! Hard work really does pay off! 🌟",
+            "OH WOW! 🎉 That's HUGE! You should be so incredibly proud — tell me everything!",
+            "YESSS! You worked so hard for this! How are you celebrating?!",
+            "This is amazing! You did that! Who was the first person you told?",
+            "Look at you!! What an accomplishment. How does it feel to have actually done it? 🌟",
         ],
         "calm": [
-            "That's really impressive! You don't even seem surprised — you knew you could do it! 😊",
-            "Look at you! That's a big achievement. What's your next goal?",
+            "That's really impressive! You seem so calm about it — you believed in yourself all along 😊",
+            "Look at you, achieving things! That's a big deal. What's the next goal?",
+        ],
+        "tired": [
+            "You did it even through the exhaustion. That's actually the hardest kind of success. Be proud of yourself.",
         ],
     },
     "social": {
         "happy": [
-            "That sounds like so much fun! Who did you go with? 😊",
-            "I love that! Good times with friends are the best. What was the highlight?",
-            "That sounds amazing! Tell me more about it!",
+            "That sounds like so much fun! Who were you with? 😊",
+            "I love that! Good times with good people are the best. What was the highlight?",
+            "That sounds amazing — those are the memories you look back on. What happened?",
         ],
         "sad": [
-            "Social stuff can be tricky. What happened?",
-            "I'm sorry you're feeling that way. Did something happen with your friends?",
+            "Social stuff can be really painful, especially when it involves people you care about. What happened?",
+            "I'm sorry. Feeling left out or hurt by friends can be just as painful as anything else.",
+        ],
+        "lonely": [
+            "It can feel really isolating when social situations don't go the way you hoped. I'm here.",
+            "Loneliness in a crowd is one of the worst feelings. What happened?",
         ],
     },
     "health": {
         "sad": [
-            "I'm sorry you're not feeling well. Are you taking care of yourself? 💚",
-            "That sounds tough. Health worries are really scary. Have you seen a doctor?",
+            "Health worries are really scary, and it's okay to feel overwhelmed. Are you getting support?",
+            "I'm sorry you're not feeling well 💚 Your body and mind need rest. Are you taking care of yourself?",
         ],
         "anxious": [
-            "Health anxiety is so valid. The uncertainty is the hardest part, isn't it?",
-            "That must be really worrying. Have you been able to talk to someone about it?",
+            "Health anxiety is so real — the uncertainty is often the worst part. What's worrying you?",
+            "It makes complete sense to feel scared about health stuff. Have you been able to talk to a doctor?",
         ],
         "tired": [
-            "Your body is telling you to rest. Please listen to it. 😴",
-            "Being sick is exhausting. Give yourself permission to just rest.",
+            "Your body is telling you something. Please listen to it — rest is not laziness right now.",
+            "Being sick or rundown is exhausting. Give yourself full permission to just rest today.",
         ],
     },
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# GENERIC EMOTION RESPONSES (when no specific topic is detected)
+# GENERIC EMOTION RESPONSES — Much more empathetic and human
+# Used when no specific topic is detected and Gemini is unavailable
 # ═══════════════════════════════════════════════════════════════════════
 
 GENERIC_RESPONSES = {
     "happy": [
-        "That sounds wonderful! I'm really glad to hear about that. 😊 What made it so special?",
-        "I love that! It's so great when good things happen. Tell me more!",
-        "That's amazing! You sound really happy about this. 🎉 What happened?",
-        "What a lovely thing to share! I can tell this means a lot to you. ✨",
-        "That's so nice! I'm happy for you. What's the story behind it?",
+        "I can feel the good energy through the screen! 😊 What happened? Tell me everything.",
+        "That's so good to hear! What's got you feeling this way?",
+        "Love hearing this from you! What's the story?",
+        "This made me smile. You deserve good things. What happened?",
     ],
     "sad": [
-        "I'm sorry you're going through that. That sounds really tough. 💙 I'm here for you.",
-        "That must be really hard. Thank you for trusting me with this. What happened?",
-        "I hear you, and your feelings are completely valid. Want to tell me more?",
-        "That sounds painful. You don't have to go through this alone. 💜",
-        "I'm really sorry to hear that. It takes courage to talk about difficult things.",
+        "I can hear that you're hurting right now. 💙 I'm right here — you don't have to go through this alone.",
+        "That sounds really painful. Thank you for trusting me with this. What's going on?",
+        "I'm sorry you're feeling this way. Your feelings make complete sense. Want to talk about it?",
+        "Hey, I see you. Whatever you're going through right now, I'm not going anywhere. 💜",
+        "That sounds really heavy. It's okay to not be okay. Can you tell me more about what happened?",
     ],
     "anxious": [
-        "I can understand why that would make you feel anxious. Let's take a breath. 🌊",
-        "It's natural to feel worried about that. What part concerns you most?",
-        "That sounds stressful. You don't have to figure it all out right now.",
-        "I hear your worry. One step at a time — you've handled tough things before. 💪",
-        "That's a lot to deal with. Would a breathing exercise help right now?",
+        "I can feel the stress in your words. Let's slow down together for a second. 🌊 What's making you most anxious?",
+        "That sounds really overwhelming. You don't have to figure it all out right now — one thing at a time.",
+        "Anxiety is exhausting. What's the thing your brain keeps coming back to?",
+        "I hear you. It's okay to feel scared or worried. What happened?",
+        "Your worry is valid. Let's talk through it — sometimes saying it out loud helps. What's going on?",
     ],
     "angry": [
-        "I can see why that would be frustrating. Your feelings are completely valid.",
-        "That does sound unfair. It makes sense to feel upset about this.",
-        "I hear your frustration. Would it help to talk through what happened?",
-        "That sounds really annoying. You have every right to feel this way.",
-        "I understand that anger. What happened?",
+        "Your anger is completely valid right now. Something clearly wasn't right. What happened?",
+        "I would feel the same way. That sounds really unfair. Tell me what happened.",
+        "It's okay to be angry about this. I'm listening — get it all out.",
+        "That sounds infuriating. You deserved better. What's the situation?",
     ],
     "tired": [
-        "It sounds like you've been going through a lot. It's okay to rest. 😴",
-        "That sounds exhausting. Please be gentle with yourself today.",
-        "You've been carrying a lot. You don't have to do everything at once.",
-        "I can hear how drained you feel. What would help you recharge?",
-        "That's a lot on your plate. It's okay to take things slowly. 💤",
+        "I can hear how drained you are. You've been carrying a lot. What's been going on?",
+        "That kind of exhaustion goes deep. You don't have to keep pushing right now — it's okay to rest.",
+        "Being this tired usually means you've been giving too much. What's been weighing on you?",
+        "You've been through a lot, haven't you? What can I do to help right now? 💤",
     ],
     "lonely": [
-        "I'm really glad you reached out. You're not alone right now — I'm here. 💜",
-        "That sounds really isolating. I want you to know that you matter.",
-        "Feeling disconnected is so hard. I'm here to listen, always.",
-        "I hear you. Reaching out like this is brave. 🤗",
-        "That must feel heavy. You deserve to feel seen and heard.",
+        "I'm really glad you reached out. You're not alone right now — I'm here with you. 💜",
+        "That feeling of loneliness is so hard. I want you to know that you matter and you're seen.",
+        "Reaching out when you feel alone takes courage. I see you. What's making you feel this way?",
+        "I'm here. You're not invisible to me. What's going on?",
     ],
     "calm": [
-        "That's nice! I'm glad you're in a good space. What's been going on? 😊",
-        "Sounds like things are going well! Tell me about your day.",
-        "That's great! What's on your mind? I'm here to chat.",
-        "I'm glad you're sharing with me. How has your day been going? ☺️",
-        "That's lovely! What would you like to talk about?",
+        "I'm glad you're in a decent headspace. What's on your mind today?",
+        "Good to hear from you! What would you like to talk about? 😊",
+        "I'm here to chat. What's been going on with you lately?",
+        "Hey! How's your day going? What's on your mind?",
     ],
     "hopeful": [
-        "I love that positive energy! You've got this. 🌟",
-        "That's such a great attitude! What are you most excited about?",
-        "Your optimism is inspiring! Tell me more about what's ahead.",
-        "That sounds really promising! I'm cheering you on. 💪",
-        "What a wonderful outlook! Keep believing in yourself. ✨",
+        "That positive energy is contagious! What's got you feeling hopeful? 🌟",
+        "I love this side of you! What's the exciting thing ahead?",
+        "That's such a great mindset. What are you looking forward to?",
+        "You're glowing from here! What's happening? 💪",
     ],
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# CONTEXT-AWARE FOLLOW-UP QUESTIONS
-# Asked when the conversation needs a natural continuation
+# GREETING PATTERNS
 # ═══════════════════════════════════════════════════════════════════════
 
-FOLLOW_UP_QUESTIONS = {
-    "relationship": [
-        "How long have you two been together?",
-        "What do you like most about them?",
-        "How did you two meet?",
-        "What happened next?",
-    ],
-    "studies": [
-        "What are you studying?",
-        "Which subject was it?",
-        "When's your next exam?",
-        "What's your favorite subject?",
-    ],
-    "work": [
-        "What do you do for work?",
-        "How long have you been there?",
-        "What's the team like?",
-    ],
-    "achievement": [
-        "How did you celebrate?",
-        "Who was the first person you told?",
-        "What's your next goal?",
-    ],
-    "social": [
-        "Who were you with?",
-        "What was the highlight?",
-        "When's the next hangout?",
-    ],
-    "general": [
-        "Tell me more about that.",
-        "How does that make you feel?",
-        "What happened next?",
-        "Is there more to the story?",
-        "What's on your mind right now?",
-    ],
+GREETING_PATTERNS = {"hi", "hey", "hello", "hii", "hiii", "yo", "sup", "heya", "heyy", "hiya"}
+HOW_ARE_YOU_PATTERNS = {
+    "how are you", "how r u", "how are u", "hows it going", "what's up",
+    "whats up", "wassup", "how you doing", "how are you doing",
 }
-
-# ═══════════════════════════════════════════════════════════════════════
-# GREETING/SHORT MESSAGE RESPONSES
-# For messages like "hi", "hey", "hello", "how are you"
-# ═══════════════════════════════════════════════════════════════════════
-
-GREETING_PATTERNS = {"hi", "hey", "hello", "hii", "hiii", "yo", "sup", "heya", "heyy"}
-HOW_ARE_YOU_PATTERNS = {"how are you", "how r u", "how are u", "hows it going", "what's up", "whats up", "wassup"}
 
 GREETING_RESPONSES = [
-    "Hey there! 💚 How's your day going?",
-    "Hi! I'm glad you're here. What's on your mind today? 🌿",
-    "Hello! How are you feeling today? I'm here to listen. 😊",
-    "Hey! 💚 What's going on? Tell me about your day.",
-    "Hi! 🌿 It's good to see you. How are things?",
+    "Hey! 💚 I'm glad you're here. How are you feeling today?",
+    "Hi! I'm here and listening. What's on your mind? 🌿",
+    "Hello! How's your day going? I'm all yours.",
+    "Hey there! 💚 What's going on? Talk to me.",
+    "Hi! It's good to see you. What would you like to talk about today?",
+]
+
+HOW_ARE_YOU_RESPONSES = [
+    "I'm doing great, thanks for asking! More importantly — how are YOU doing? 😊",
+    "I'm here and ready to listen! How are you feeling today?",
+    "Good, thank you! 💚 But I'd rather hear about you — what's going on?",
 ]
 
 SHORT_AFFIRM_PATTERNS = {"yes", "yeah", "yep", "yea", "ya", "yup", "mhm", "correct", "right", "true"}
@@ -270,37 +249,38 @@ SHORT_DENY_PATTERNS = {"no", "nah", "nope", "not really", "na"}
 SHORT_OK_PATTERNS = {"ok", "okay", "k", "fine", "good", "nice", "cool", "great", "alright"}
 
 # ═══════════════════════════════════════════════════════════════════════
-# SITUATION-AWARE FOLLOW-UPS (from original decision engine)
+# SITUATION-AWARE ADDITIONS
+# These add depth on top of topic/emotion responses
 # ═══════════════════════════════════════════════════════════════════════
 
-SITUATION_FOLLOWUPS = {
+SITUATION_ADDITIONS = {
     "academic_stress": [
-        "School pressure is real. Remember — your worth isn't defined by grades.",
-        "Take it one step at a time. You're doing better than you think.",
+        "Academic pressure is so real — your worth is NOT your grades.",
+        "School stress can make everything feel high stakes. Remember — this is just one moment.",
     ],
     "work_stress": [
-        "Work can really take a toll. Don't forget to take care of yourself too.",
-        "It's okay to set boundaries at work. Your wellbeing matters.",
+        "Work can really take a toll on your whole wellbeing, not just your time.",
+        "Your mental health matters more than any job. Don't forget that.",
     ],
     "relationship_issues": [
-        "Relationships can bring up a lot of emotions. How are you feeling about it?",
-        "That's a big moment. Whatever happens, you deserve to be happy.",
+        "Whatever happens, you deserve someone who treats you well.",
+        "Relationship pain is real pain. Don't let anyone tell you to 'just get over it'.",
     ],
     "loneliness": [
-        "Connection is a basic human need. I'm glad you're talking to me.",
-        "Even small moments of connection matter. You're not alone right now.",
+        "Connection is a real human need. You reaching out matters.",
+        "Even small moments of being heard can make a difference. I'm here.",
     ],
     "grief": [
-        "Grief has no timeline. Be patient with yourself through this.",
-        "I'm sorry for what you're going through. Your feelings are valid.",
+        "Grief has no timeline. Be patient and gentle with yourself.",
+        "Losing someone is one of the hardest things. I'm so sorry.",
     ],
     "financial_stress": [
-        "Financial worries are incredibly stressful. You're doing your best.",
-        "Money problems don't define you. One step at a time.",
+        "Financial stress affects everything. You're dealing with a lot.",
+        "Money worries don't define you, even when they feel overwhelming.",
     ],
     "health_anxiety": [
-        "Health concerns can be scary. Have you been able to talk to someone about it?",
-        "It's okay to feel worried about your health. Taking care of yourself matters.",
+        "Health concerns are scary, especially when things feel uncertain.",
+        "Taking care of yourself also means acknowledging when you're scared.",
     ],
     "general": [],
 }
@@ -334,15 +314,9 @@ def decide_response(
     """
     Generate a smart, context-aware response.
 
-    Args:
-        emotion: Detected emotion label
-        situation: Detected situation
-        user_message: The user's original message
-        history: Conversation history [{role, text, emotion}, ...]
-
     Returns:
         tuple: (reply, actions, needs_gemini)
-        needs_gemini = True if message is too complex for templates
+        needs_gemini = True if message is complex enough for Gemini
     """
     history = history or []
     text_lower = user_message.lower().strip()
@@ -355,55 +329,106 @@ def decide_response(
     if words & GREETING_PATTERNS and is_short:
         return random.choice(GREETING_RESPONSES), ["mindfulness"], False
 
-    # ─── 2. SHORT AFFIRMATIONS (yes/no/ok) ────────────────────────
+    # ─── 2. "HOW ARE YOU" ─────────────────────────────────────────
+    for pattern in HOW_ARE_YOU_PATTERNS:
+        if pattern in text_lower and is_short:
+            return random.choice(HOW_ARE_YOU_RESPONSES), ["mindfulness"], False
+
+    # ─── 3. SHORT AFFIRMATIONS (yes/no/ok) ────────────────────────
     if is_short and (words & SHORT_AFFIRM_PATTERNS or words & SHORT_DENY_PATTERNS or words & SHORT_OK_PATTERNS):
         return _handle_short_response(text_lower, words, history, emotion), EMOTION_ACTIONS.get(emotion, []), False
 
-    # ─── 3. TOPIC-SPECIFIC RESPONSE ───────────────────────────────
+    # ─── 4. TOPIC-SPECIFIC RESPONSE ───────────────────────────────
     if topics:
         primary_topic = topics[0]
         topic_templates = TOPIC_RESPONSES.get(primary_topic, {})
         emotion_templates = topic_templates.get(emotion, [])
 
-        # Only use topic templates if we have HIGH confidence in the emotion
         if emotion_templates and not is_short:
             reply = random.choice(emotion_templates)
+            # Maybe append a situation-based addition
+            additions = SITUATION_ADDITIONS.get(situation, [])
+            if additions and situation != "general" and random.random() > 0.6:
+                reply = f"{reply}\n\n{random.choice(additions)}"
             actions = EMOTION_ACTIONS.get(emotion, [])
             return reply, actions, False
 
-    # ─── 4. CHECK IF MESSAGE SHOULD GO TO GEMINI ─────────────────
-    # Route to Gemini aggressively for better contextual responses
+    # ─── 5. CHECK IF MESSAGE SHOULD GO TO GEMINI ─────────────────
     word_count = len(user_message.split())
     conversation_is_going = len(history) >= 4
-    has_any_substance = word_count > 3
+    has_any_substance = word_count > 2
     is_not_just_ok = not (words & SHORT_OK_PATTERNS or words & SHORT_AFFIRM_PATTERNS or words & SHORT_DENY_PATTERNS)
 
-    # Route to Gemini if:
-    # - Message has substance (>3 words) and isn't a simple greeting, OR
-    # - Conversation has been going for a while (context matters), OR
-    # - Message has any emotional indicators
     needs_gemini = (
         (has_any_substance and is_not_just_ok) or
-        (conversation_is_going and word_count > 2) or
-        (emotion in ("sad", "lonely", "anxious", "angry") and word_count > 2)
+        (conversation_is_going and word_count > 1) or
+        (emotion in ("sad", "lonely", "anxious", "angry") and word_count > 1)
     )
 
     if needs_gemini:
-        fallback = random.choice(GENERIC_RESPONSES.get(emotion, GENERIC_RESPONSES["calm"]))
+        # Return a meaningful fallback while Gemini responds (or as the response if Gemini fails)
+        fallback = _get_empathetic_fallback(emotion, situation, user_message)
         actions = EMOTION_ACTIONS.get(emotion, [])
         return fallback, actions, True
 
-    # ─── 5. GENERIC EMOTION RESPONSE (only for very short/simple) ─
+    # ─── 6. GENERIC EMOTION RESPONSE (simple messages) ───────────
     responses = GENERIC_RESPONSES.get(emotion, GENERIC_RESPONSES["calm"])
     reply = random.choice(responses)
 
-    # Add situation follow-up sometimes
-    followups = SITUATION_FOLLOWUPS.get(situation, [])
-    if followups and situation != "general" and random.random() > 0.5:
-        reply = f"{reply}\n\n{random.choice(followups)}"
+    additions = SITUATION_ADDITIONS.get(situation, [])
+    if additions and situation != "general" and random.random() > 0.5:
+        reply = f"{reply}\n\n{random.choice(additions)}"
 
     actions = EMOTION_ACTIONS.get(emotion, [])
     return reply, actions, False
+
+
+def _get_empathetic_fallback(emotion: str, situation: str, user_message: str) -> str:
+    """
+    Get an empathetic fallback reply when Gemini is unavailable.
+
+    This is the response the user sees if Gemini fails — it must be
+    genuinely warm and contextual, not generic filler.
+    """
+    # Situation-specific fallbacks (better than pure emotion)
+    situation_fallbacks = {
+        "work_stress": {
+            "angry": "That sounds really unfair. Being treated like that at work is not okay — your frustration makes complete sense. What happened?",
+            "sad": "Work can really bring you down, especially when you're not being treated well. I'm sorry you're going through this. Want to talk about it?",
+            "anxious": "Work anxiety follows you everywhere, doesn't it. What's the thing that's stressing you most right now?",
+            "tired": "Work burnout is so real, and it tends to sneak up on you. How long have you been feeling this drained?",
+            "_default": "Work stress can affect everything. I'm here — what's been going on?",
+        },
+        "academic_stress": {
+            "anxious": "Exam stress is one of the worst feelings — it's constant and exhausting. What's the subject or situation you're most worried about?",
+            "sad": "Academic setbacks hurt, especially when you've put in the work. One result doesn't define you. What happened?",
+            "tired": "Study fatigue is very real. Your brain needs rest too. How long have you been grinding?",
+            "_default": "School pressure is a lot to carry. What's going on right now?",
+        },
+        "relationship_issues": {
+            "sad": "Relationship pain is some of the deepest pain there is. I'm really sorry you're going through this. Want to talk about what happened?",
+            "angry": "Being hurt or disrespected by someone you care about is infuriating. Your feelings are valid. What's the situation?",
+            "anxious": "Relationship uncertainty is so hard to sit with. What's worrying you most right now?",
+            "_default": "Relationship stuff is complicated and messy. I'm here — what's going on?",
+        },
+        "grief": {
+            "_default": "Grief is one of the heaviest things to carry. I'm so sorry for what you're going through. There's no right way to feel right now.",
+        },
+        "loneliness": {
+            "_default": "Loneliness is such a hard feeling. I'm really glad you reached out — you're not alone right now. What's going on?",
+        },
+    }
+
+    # Check if we have a situation-specific fallback
+    if situation in situation_fallbacks:
+        situation_map = situation_fallbacks[situation]
+        fallback = situation_map.get(emotion, situation_map.get("_default", ""))
+        if fallback:
+            return fallback
+
+    # Fall back to emotion-based generic responses
+    responses = GENERIC_RESPONSES.get(emotion, GENERIC_RESPONSES["calm"])
+    return random.choice(responses)
 
 
 def _handle_short_response(text: str, words: set, history: list, emotion: str) -> str:
@@ -417,12 +442,11 @@ def _handle_short_response(text: str, words: set, history: list, emotion: str) -
 
     if words & SHORT_AFFIRM_PATTERNS:
         if "?" in last_ai_msg:
-            # The AI asked a question and user said yes
             return random.choice([
-                "Tell me more about that! I'd love to hear the details. 😊",
-                "That's great! I'm all ears. What happened?",
-                "Awesome! Go ahead, I'm listening. 💚",
-                "I'd love to hear more! Take your time.",
+                "Tell me more! I'm all ears. 😊",
+                "Go ahead, I'm listening. What happened?",
+                "I'd love to hear more — take your time.",
+                "Okay, I'm here. Tell me everything.",
             ])
         return random.choice([
             "I'm glad to hear that! What else is on your mind? 😊",
@@ -432,15 +456,23 @@ def _handle_short_response(text: str, words: set, history: list, emotion: str) -
 
     if words & SHORT_DENY_PATTERNS:
         return random.choice([
-            "That's okay! No pressure at all. 💚 What would you like to talk about instead?",
-            "Totally fine! Is there something else on your mind?",
-            "No worries! I'm here whenever you're ready. 😊",
+            "That's totally okay. No pressure at all. 💚 What would you like to talk about?",
+            "No worries! I'm here whenever you're ready. Is there something else on your mind?",
+            "That's fine. Take your time. I'm here. 😊",
         ])
 
     # "ok", "fine", "good", etc.
+    # Check if "fine" or "good" might be negative in context (e.g., "not good")
+    if "not" in text or "not really" in text:
+        return random.choice([
+            "I can hear that things aren't great right now. Want to talk about it? 💙",
+            "It sounds like you might be going through something. I'm here if you want to share.",
+            "That's okay — you don't have to be fine. What's actually going on?",
+        ])
+
     return random.choice([
-        "I'm glad to hear that! 😊 Anything else you'd like to share?",
-        "That's good! What else is going on? I'm here to listen. 💚",
-        "Nice! Tell me more about your day if you'd like.",
-        "That's great! Is there anything on your mind? 🌿",
+        "I'm glad! 😊 What else is going on?",
+        "Good to hear! Anything on your mind you'd like to chat about?",
+        "That's great! Tell me more about your day if you like. 💚",
+        "Glad you're okay! What's on your mind?",
     ])
