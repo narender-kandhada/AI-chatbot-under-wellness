@@ -1,0 +1,20 @@
+base_model: unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit
+load_in_4bit: true
+chat_template: chatml
+datasets:
+- path: C:\My Projects\AI-chatbot-under-wellness\backend\production_training\lora_export\train.jsonl
+  type: chat_template
+val_set_size: 0
+output_dir: ./outputs/innercircle-lora
+adapter: lora
+lora_r: 16
+lora_alpha: 32
+lora_dropout: 0.05
+sequence_len: 2048
+sample_packing: false
+micro_batch_size: 2
+gradient_accumulation_steps: 4
+num_epochs: 3
+learning_rate: 0.0002
+optimizer: paged_adamw_8bit
+bf16: auto

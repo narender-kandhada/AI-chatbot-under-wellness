@@ -5,6 +5,8 @@
 # Android/IntelliJ
 #
 build/
+.externalNativeBuild/
+.kotlin/
 .idea
 .gradle
 local.properties
@@ -14,3 +16,6 @@ local.properties
 
 # Bundle artifacts
 *.jsbundle
+
+# Logs
+*.log

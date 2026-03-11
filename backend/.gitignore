@@ -1,0 +1,59 @@
+# Python cache/bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases and logs
+*.db
+*.sqlite3
+*.log
+
+# Notebook artifacts
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# Build/distribution artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+
+# ML/training generated artifacts
+app/ml/models/*.pkl
+app/ml/models/*.joblib
+temp_training/*.joblib
+temp_training/synthetic_qa.jsonl
+production_training/dataset.jsonl
+production_training/import_raw.jsonl
+production_training/evaluation_report.json
+production_training/generation_progress.json
+production_training/lora_export/train.jsonl
+production_training/lora_export/valid.jsonl
+production_training/lora_export/dataset_manifest.json
+production_training/lora_export/outputs/
+production_training/lora_export/checkpoint*/
+production_training/lora_export/runs/
+production_training/lora_export/wandb/
+production_training/lora_export/*.safetensors
+production_training/lora_export/*.bin
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

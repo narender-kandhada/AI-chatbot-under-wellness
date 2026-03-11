@@ -1,6 +1,6 @@
 # 📱 InnerCircle Frontend
 
-React Native (Expo) mobile app with voice input/output, Gemini Live-style experience, glossy UI, and full backend integration.
+React Native (Expo) mobile app with voice input/output, immersive live voice experience, glossy UI, and full backend integration.
 
 ## 🚀 Setup
 
@@ -37,7 +37,7 @@ app/
 └── reflection.tsx          # Reflection & insights
 
 components/
-├── LiveOverlay.tsx          # Full-screen Gemini Live-style overlay
+├── LiveOverlay.tsx          # Full-screen live voice overlay
 ├── ChatBubble.tsx           # Message bubbles with TTS speaker button
 ├── AmbientBackground.tsx    # Animated calm background
 ├── MoodSelector.tsx         # Mood grid with bounce animation
@@ -63,7 +63,7 @@ constants/
 - Tap 🎤 button → white modal → speak → auto-sends as text
 - Uses `expo-speech-recognition` (on-device STT)
 
-### Live Mode (Gemini Live-style)
+### Live Mode (Live Voice)
 - Tap 📡 button → full-screen dark overlay
 - Animated blue/teal waveform (3 overlapping blobs)
 - **States:** listening → processing → speaking → listening (auto-loop)
@@ -91,6 +91,8 @@ constants/
 - End button: Red (#D32F2F)
 
 ## 📡 Backend Integration
+
+Backend currently uses Groq as primary hosted model with Ollama fallback; frontend API contracts are unchanged.
 
 | Screen | API Calls |
 |--------|-----------|

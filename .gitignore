@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 *.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 *.egg-info/
 dist/
 build/
@@ -24,6 +27,7 @@ ios/build/
 .env
 .env.local
 .env.production
+.env.*
 backend/.env
 frontend/.env
 backend/venv/
@@ -44,6 +48,22 @@ desktop.ini
 *.pkl
 *.joblib
 backend/app/ml/data/*.csv
+backend/production_training/lora_export/outputs/
+backend/production_training/lora_export/*.safetensors
+backend/production_training/lora_export/*.bin
+backend/production_training/lora_export/checkpoint*/
+backend/production_training/lora_export/runs/
+backend/production_training/lora_export/wandb/
+backend/production_training/lora_export/.ipynb_checkpoints/
+
+# ─── Jupyter / Colab ──────────────────────────────────
+*.ipynb_checkpoints/
+.ipynb_checkpoints/
+
+# ─── Local temp/runtime data ──────────────────────────
+tmp/
+temp/
+*.tmp
 
 # ─── Logs ─────────────────────────────────────────────
 *.log

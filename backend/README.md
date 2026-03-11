@@ -138,3 +138,37 @@ Routes:
 Note:
 - This path is a fast local training loop for iteration.
 - It is not full LLM fine-tuning.
+
+## 🏭 Production Training Path
+
+The backend now includes a production-oriented dataset workflow under `backend/production_training`.
+
+Purpose:
+- Generate higher-quality synthetic examples with richer metadata.
+- Evaluate dataset quality before any fine-tuning attempt.
+- Export LoRA-ready train/validation files and scaffold configs for Colab or GPU training.
+
+Routes:
+- `GET /training/production/status`
+- `POST /training/production/generate`
+- `POST /training/production/evaluate`
+- `POST /training/production/clean`
+- `POST /training/production/export-lora`
+
+Current workflow:
+1. Generate (`/training/production/generate`)
+2. Clean (`/training/production/clean`)
+3. Evaluate (`/training/production/evaluate`)
+4. Export LoRA scaffold (`/training/production/export-lora`)
+
+Label policy:
+- Generation is constrained to canonical emotion/situation labels.
+- Cleanup normalizes legacy rows and keeps accepted rows production-ready.
+
+Artifacts:
+- `backend/production_training/dataset.jsonl`
+- `backend/production_training/evaluation_report.json`
+- `backend/production_training/lora_export/train.jsonl`
+- `backend/production_training/lora_export/valid.jsonl`
+- `backend/production_training/lora_export/axolotl_config.yml`
+- `backend/production_training/lora_export/unsloth_train_stub.py`

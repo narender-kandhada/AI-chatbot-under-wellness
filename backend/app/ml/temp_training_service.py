@@ -33,6 +33,14 @@ DATASET_PATH = TEMP_DIR / "synthetic_qa.jsonl"
 MODEL_PATH = TEMP_DIR / "retriever.joblib"
 GENERATION_TIMEOUT_SECONDS = 180
 
+DISALLOWED_ANSWER_PHRASES = {
+    "as an ai",
+    "language model",
+    "coping mechanisms",
+    "practice self-care",
+    "seek immediate medical",
+}
+
 SYSTEM_PROMPT = """You create synthetic wellness conversation training pairs.
 
 Return only valid JSON.
@@ -45,6 +53,9 @@ Rules:
 - No lists.
 - No clinical or medical advice.
 - Keep tone warm, direct, and supportive.
+- Make the question specific, messy, and human instead of generic.
+- Make the answer emotionally attuned, not robotic or preachy.
+- Avoid repeated starter phrases across pairs.
 - Vary situations such as relationship stress, loneliness, work stress,
   academic stress, family tension, grief, burnout, and hopeful moments.
 """
@@ -119,6 +130,29 @@ def _extract_records(raw_text: str) -> list[dict]:
     return cleaned_records
 
 
+def _passes_temp_quality_gate(pair: dict) -> bool:
+    question = str(pair.get("question", "")).strip()
+    answer = str(pair.get("answer", "")).strip()
+    if not question or not answer:
+        return False
+
+    question_words = question.split()
+    answer_words = answer.split()
+    answer_lower = answer.lower()
+
+    if len(question_words) < 4 or len(question_words) > 40:
+        return False
+    if len(answer_words) < 18 or len(answer_words) > 120:
+        return False
+    if answer.count("?") > 1:
+        return False
+    if any(marker in answer for marker in ("\n-", "\n*", "1.", "2.")):
+        return False
+    if any(phrase in answer_lower for phrase in DISALLOWED_ANSWER_PHRASES):
+        return False
+    return True
+
+
 def _load_existing_pairs() -> list[dict]:
     if not DATASET_PATH.exists():
         return []
@@ -189,7 +223,11 @@ def generate_temp_dataset(total_pairs: int = 1000, batch_size: int = 20, overwri
             normalized_question = clean_text(pair["question"])
             if not normalized_question or normalized_question in seen_questions:
                 continue
+            if not _passes_temp_quality_gate(pair):
+                continue
             seen_questions.add(normalized_question)
+            pair["source"] = "synthetic_ollama"
+            pair["generator_model"] = model_used
             pairs.append(pair)
             if len(pairs) >= total_pairs:
                 break
@@ -267,3 +305,4 @@ def get_temp_reply(message: str, top_k: int = 3) -> dict:
         "similarity": round(best_score, 4),
         "matched_question": best_pair["question"],
     }
+
