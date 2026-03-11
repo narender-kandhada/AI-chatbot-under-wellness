@@ -26,7 +26,8 @@ ios/build/
 .env.production
 backend/.env
 frontend/.env
-
+backend/venv/
+backend/.venv/
 # ─── IDE ──────────────────────────────────────────────
 .vscode/
 .idea/
@@ -51,3 +52,8 @@ npm-debug.log*
 # ─── ngrok ────────────────────────────────────────────
 ngrok.exe
 ngrok
+venv/
+backend/venv/
+__pycache__/
+*.pyc
+.env

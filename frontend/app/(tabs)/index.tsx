@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, Animated, useColorScheme,
+  View, Text, StyleSheet, Animated, useColorScheme, Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { CalmBackground } from '../../components/AmbientBackground';
 import { MoodSelector, MoodType } from '../../components/MoodSelector';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 import { saveMoodEntry, updateStreak, getStreak, getDailyAffirmation, type StreakData } from '../../services/storage.service';
+
+const COLLEGE_LOGO = require('../../assets/images/college_logo.png.png');
+const DEPARTMENT_LOGO = require('../../assets/images/department_logo.png.png');
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -19,6 +22,7 @@ function getGreeting() {
 export default function CheckInScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = colors[scheme];
+  const isDark = scheme === 'dark';
   const greeting = getGreeting();
   const affirmation = getDailyAffirmation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -50,6 +54,20 @@ export default function CheckInScreen() {
     <CalmBackground>
       <View style={styles.container}>
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <View style={styles.headerRow}>
+            <View style={styles.brandLeft}>
+              <View style={[styles.logoWrap, isDark && styles.logoWrapDark]}>
+                <Image source={DEPARTMENT_LOGO} style={styles.logo} resizeMode="contain" />
+              </View>
+              <Text style={[styles.brandText, { color: theme.text }]}>Wellness for MRCE</Text>
+            </View>
+
+            <View style={styles.logoRowRight}>
+              <View style={[styles.logoWrap, isDark && styles.logoWrapDark]}>
+                <Image source={COLLEGE_LOGO} style={styles.logo} resizeMode="contain" />
+              </View>
+            </View>
+          </View>
           <Text style={styles.emoji}>{greeting.emoji}</Text>
           <Text style={[styles.greeting, { color: theme.primary }]}>{greeting.text}</Text>
           <Text style={[styles.title, { color: theme.text }]}>How are you feeling?</Text>
@@ -87,6 +105,13 @@ export default function CheckInScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.xl, paddingTop: spacing.xxl + spacing.lg, justifyContent: 'space-between' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
+  brandLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
+  brandText: { fontSize: typography.sizes.base, fontWeight: '800', letterSpacing: 0.2, flexShrink: 1 },
+  logoRowRight: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginLeft: spacing.md },
+  logoWrap: { borderRadius: 10, overflow: 'hidden' },
+  logoWrapDark: { backgroundColor: 'rgba(255,255,255,0.92)', padding: 4 },
+  logo: { width: 36, height: 36 },
   emoji: { fontSize: 40, marginBottom: spacing.sm },
   greeting: { fontSize: typography.sizes.base, fontWeight: '600', marginBottom: spacing.xs },
   title: { fontSize: typography.sizes.xxxl, fontWeight: '800', marginBottom: spacing.lg, lineHeight: typography.sizes.xxxl * 1.15 },
