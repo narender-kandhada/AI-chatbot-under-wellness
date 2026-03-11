@@ -1,6 +1,6 @@
 # 🐍 InnerCircle Backend
 
-FastAPI backend with ML-powered emotion detection, Gemini AI booster, and contextual response generation.
+FastAPI backend with ML-powered emotion detection, Groq chat responses, and contextual response generation.
 
 ## 🚀 Setup
 
@@ -11,8 +11,8 @@ source venv/bin/activate       # macOS/Linux
 
 pip install -r requirements.txt
 
-# Create .env with your Gemini API key
-echo GEMINI_API_KEY=your_key_here > .env
+# Create .env with your Groq API key
+echo GROQ_API_KEY=your_key_here > .env
 
 # Start server
 python -m uvicorn app.main:app --reload
@@ -25,7 +25,7 @@ python -m uvicorn app.main:app --reload
 ```
 app/
 ├── api/
-│   ├── chat.py             # POST /chat — hybrid router (templates + Gemini)
+│   ├── chat.py             # POST /chat — hybrid router (templates + Groq)
 │   ├── emotion.py          # POST /emotion/analyze
 │   └── safety.py           # POST /safety/check
 ├── ml/
@@ -33,8 +33,8 @@ app/
 │   ├── sentiment_model.py  # TF-IDF + LinearSVC classifier
 │   ├── emotion_model.py    # Keyword scoring (8 emotions)
 │   ├── situation_model.py  # Keyword scoring (8 situations)
-│   ├── decision_engine.py  # Smart router → Gemini or templates
-│   ├── gemini_service.py   # Gemini 2.0 Flash integration
+│   ├── decision_engine.py  # Smart router → hosted AI or templates
+│   ├── groq_service.py     # Groq chat integration
 │   ├── conversation_memory.py # Session-based history tracking
 │   ├── keyword_extractor.py   # Topic extraction
 │   └── models/
@@ -43,7 +43,7 @@ app/
 │   ├── chat.py             # ChatRequest / ChatResponse
 │   └── emotion.py          # EmotionRequest / EmotionResponse
 ├── core/
-│   └── config.py           # Settings (GEMINI_API_KEY, etc.)
+│   └── config.py           # Settings (GROQ_API_KEY, etc.)
 └── main.py                 # FastAPI app + CORS
 ```
 
@@ -53,7 +53,7 @@ app/
 ```
 User message → ML Pipeline → Decision Engine
                                  ├── Simple (greetings, yes/no) → Templates
-                                 └── Complex (>3 words, ongoing chat) → Gemini
+                                 └── Complex (>3 words, ongoing chat) → Groq
 ```
 
 ### Decision Engine Routing
@@ -61,15 +61,15 @@ User message → ML Pipeline → Decision Engine
 |-----------|-------|
 | Greetings ("hi", "hey") | Templates (instant) |
 | Short affirmations ("yes", "ok") | Templates (instant) |
-| Messages >3 words | **Gemini** (contextual) |
-| Conversation 4+ messages | **Gemini** (context-aware) |
-| Negative emotion detected | **Gemini** (empathetic) |
+| Messages >3 words | **Groq** (contextual) |
+| Conversation 4+ messages | **Groq** (context-aware) |
+| Negative emotion detected | **Groq** (empathetic) |
 
-### Gemini Booster
-- **Model:** Gemini 2.0 Flash
-- **Rate limit:** 12 calls/min, 1000/day (within free tier)
+### Hosted AI
+- **Primary:** Groq `llama-3.3-70b-versatile`
+- **Fallback model:** Groq `llama-3.1-8b-instant`
+- **Backup path:** Ollama local model if Groq is unavailable
 - **System prompt:** Warm wellness companion personality
-- **Fallback:** Templates used if Gemini fails/rate-limited
 
 ## 📡 API Reference
 
@@ -84,7 +84,7 @@ User message → ML Pipeline → Decision Engine
   "emotion": "anxious",
   "confidence": 0.45,
   "actions": ["breathing", "grounding", "meditation"],
-  "source": "gemini"
+  "source": "groq"
 }
 ```
 
@@ -114,8 +114,27 @@ User message → ML Pipeline → Decision Engine
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `GEMINI_API_KEY` | Google AI Studio API key | Yes |
+| `GROQ_API_KEY` | Groq API key | Yes |
 
 - Python 3.11+
 - CORS enabled for all origins
 - Auto-reload with `--reload` flag
+
+## 🧪 Temporary Training Path
+
+The backend now includes a separate temporary training workspace under `backend/temp_training`.
+
+Purpose:
+- Generate up to 1000 synthetic question/answer pairs with Ollama.
+- Build a fast local retrieval model from those pairs.
+- Test responses without touching the main chat pipeline.
+
+Routes:
+- `POST /training/temp/generate` to generate synthetic pairs.
+- `POST /training/temp/build` to build the temporary retrieval model.
+- `POST /training/temp/respond` to query the temporary trained model.
+- `GET /training/temp/status` to inspect dataset and model status.
+
+Note:
+- This path is a fast local training loop for iteration.
+- It is not full LLM fine-tuning.

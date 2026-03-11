@@ -19,4 +19,4 @@ class ChatResponse(BaseModel):
     emotion: str
     confidence: float
     actions: List[str] = []
-    source: Optional[str] = None   # "smart_templates" or "gemini"
+    source: Optional[str] = None   # "smart_templates", "groq", or "ollama"

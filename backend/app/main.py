@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import chat, emotion, safety
+from app.api import chat, emotion, safety, training
 from app.core.config import settings
 
 app = FastAPI(
@@ -20,6 +20,7 @@ app.add_middleware(
 app.include_router(chat.router, prefix="/chat", tags=["Chat"])
 app.include_router(emotion.router, prefix="/emotion", tags=["Emotion"])
 app.include_router(safety.router, prefix="/safety", tags=["Safety"])
+app.include_router(training.router, prefix="/training", tags=["Training"])
 
 @app.get("/")
 def health_check():

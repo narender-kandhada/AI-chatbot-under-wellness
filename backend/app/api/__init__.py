@@ -1,3 +1,3 @@
-from . import chat, emotion, safety
+from . import chat, emotion, safety, training
 
-__all__ = ['chat', 'emotion', 'safety']
+__all__ = ['chat', 'emotion', 'safety', 'training']

@@ -1,5 +1,5 @@
 """
-Ollama Service — Local LLM fallback when Gemini quota is exhausted.
+Ollama Service — Local LLM fallback when the hosted AI provider is unavailable.
 
 Uses llama3:latest as primary, mistral:latest as fallback.
 Runs against local Ollama instance at http://localhost:11434.

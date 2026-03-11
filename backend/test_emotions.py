@@ -39,10 +39,10 @@ response_tests = [
 ]
 
 for msg, emotion, situation in response_tests:
-    reply, actions, needs_gemini = decide_response(emotion=emotion, situation=situation, user_message=msg)
+    reply, actions, needs_hosted_ai = decide_response(emotion=emotion, situation=situation, user_message=msg)
     print(f'  [{emotion}] "{msg}"')
     print(f"    -> {reply[:120]}")
-    print(f"    -> needs_gemini={needs_gemini}")
+    print(f"    -> needs_hosted_ai={needs_hosted_ai}")
     print()
 
 status = "ALL PASS" if all_pass else "SOME EMOTION TESTS FAILED"

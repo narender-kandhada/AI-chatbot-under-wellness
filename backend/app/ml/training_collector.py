@@ -1,10 +1,10 @@
 """
 Training Data Collector — Phase 2 of the AI Improvement Roadmap.
 
-Silently saves high-quality AI responses (from Gemini or Ollama) to SQLite.
+Silently saves high-quality AI responses (from Groq or Ollama) to SQLite.
 These become the training dataset for Phase 3 (fine-tuning with LoRA on Colab).
 
-Only saves responses from "gemini" or "ollama" sources — NOT templates.
+Only saves responses from "groq" or "ollama" sources — NOT templates.
 Templates are rule-based and shouldn't be used to train a neural model.
 
 Database location: backend/training_data.db
@@ -21,7 +21,7 @@ DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "training_data.db"
 DB_PATH = os.path.normpath(DB_PATH)
 
 # ─── Only collect from these sources (not templates) ─────────────────
-COLLECTABLE_SOURCES = {"gemini", "ollama"}
+COLLECTABLE_SOURCES = {"groq", "ollama"}
 
 _db_initialized = False
 
@@ -76,7 +76,7 @@ def save_response(
     """
     Save a high-quality AI response for future fine-tuning.
 
-    Only saves if source is 'gemini' or 'ollama'.
+    Only saves if source is 'groq' or 'ollama'.
     Silently ignores template responses.
     """
     if source not in COLLECTABLE_SOURCES:

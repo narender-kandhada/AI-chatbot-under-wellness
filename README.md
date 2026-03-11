@@ -114,7 +114,7 @@ python -m uvicorn app.main:app --reload
 ### 2. Tunnel (for mobile)
 
 ```bash
-ngrok http 8000
+.\ngrok.exe http 8000
 # Copy the https://xxxxx.ngrok-free.dev URL
 ```
 
@@ -127,8 +127,7 @@ npm install
 # Create .env with your ngrok URL
 echo EXPO_PUBLIC_API_URL=https://xxxxx.ngrok-free.dev > .env
 
-# First time: build native dev client (required for STT/TTS)
-npx expo run:android
+# First time: build native dev client (required for STT/TT
 
 # Subsequent runs: just start Metro
 npx expo start -c --dev-client

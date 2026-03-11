@@ -2,6 +2,11 @@
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
 
+const DEFAULT_HEADERS = {
+  "Content-Type": "application/json",
+  "ngrok-skip-browser-warning": "1",
+};
+
 export interface EmotionRequest {
   text: string;
 }
@@ -18,9 +23,7 @@ export async function analyzeEmotion(
   try {
     const response = await fetch(`${API_BASE_URL}/emotion/analyze`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: DEFAULT_HEADERS,
       body: JSON.stringify(data),
     });
 

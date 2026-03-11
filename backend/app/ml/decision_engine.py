@@ -4,10 +4,10 @@ Smart Decision Engine — Context-Aware Response Generator.
 Generates natural, human-like responses by:
 1. Detecting greetings and short messages with dedicated handlers
 2. Using topic + emotion combos for rich, specific responses
-3. Routing complex messages to Gemini when available
+3. Routing complex messages to the hosted AI provider when available
 4. Falling back to deep, empathetic generic responses
 
-The Gemini fallback when templates are used should NEVER feel cold or robotic.
+The hosted-AI fallback when templates are used should NEVER feel cold or robotic.
 """
 import random
 from app.ml.keyword_extractor import get_topic_summary
@@ -164,7 +164,7 @@ TOPIC_RESPONSES = {
 
 # ═══════════════════════════════════════════════════════════════════════
 # GENERIC EMOTION RESPONSES — Much more empathetic and human
-# Used when no specific topic is detected and Gemini is unavailable
+# Used when no specific topic is detected and hosted AI is unavailable
 # ═══════════════════════════════════════════════════════════════════════
 
 GENERIC_RESPONSES = {
@@ -315,8 +315,8 @@ def decide_response(
     Generate a smart, context-aware response.
 
     Returns:
-        tuple: (reply, actions, needs_gemini)
-        needs_gemini = True if message is complex enough for Gemini
+        tuple: (reply, actions, needs_hosted_ai)
+        needs_hosted_ai = True if message is complex enough for the hosted AI provider
     """
     history = history or []
     text_lower = user_message.lower().strip()
@@ -353,20 +353,20 @@ def decide_response(
             actions = EMOTION_ACTIONS.get(emotion, [])
             return reply, actions, False
 
-    # ─── 5. CHECK IF MESSAGE SHOULD GO TO GEMINI ─────────────────
+    # ─── 5. CHECK IF MESSAGE SHOULD GO TO HOSTED AI ──────────────
     word_count = len(user_message.split())
     conversation_is_going = len(history) >= 4
     has_any_substance = word_count > 2
     is_not_just_ok = not (words & SHORT_OK_PATTERNS or words & SHORT_AFFIRM_PATTERNS or words & SHORT_DENY_PATTERNS)
 
-    needs_gemini = (
+    needs_hosted_ai = (
         (has_any_substance and is_not_just_ok) or
         (conversation_is_going and word_count > 1) or
         (emotion in ("sad", "lonely", "anxious", "angry") and word_count > 1)
     )
 
-    if needs_gemini:
-        # Return a meaningful fallback while Gemini responds (or as the response if Gemini fails)
+    if needs_hosted_ai:
+        # Return a meaningful fallback while the hosted AI responds (or as the response if it fails)
         fallback = _get_empathetic_fallback(emotion, situation, user_message)
         actions = EMOTION_ACTIONS.get(emotion, [])
         return fallback, actions, True
@@ -385,9 +385,9 @@ def decide_response(
 
 def _get_empathetic_fallback(emotion: str, situation: str, user_message: str) -> str:
     """
-    Get an empathetic fallback reply when Gemini is unavailable.
+    Get an empathetic fallback reply when hosted AI is unavailable.
 
-    This is the response the user sees if Gemini fails — it must be
+    This is the response the user sees if the hosted AI fails — it must be
     genuinely warm and contextual, not generic filler.
     """
     # Situation-specific fallbacks (better than pure emotion)

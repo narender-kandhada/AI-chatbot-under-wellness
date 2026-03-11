@@ -1,13 +1,13 @@
 """
-Chat API Endpoint — 3-Tier AI Router.
+Chat API Endpoint — Groq-powered AI Chat.
 
 Routes messages through:
-  1. Gemini (online, best quality) — handles messages when quota is available
-  2. Ollama (local LLM, free, unlimited) — handles messages when Gemini is exhausted
-  3. Empathetic Templates (offline, instant) — always-on safety net
+    1. Groq (primary hosted AI engine for chat responses)
+    2. Ollama (local LLM fallback when Groq is unavailable)
+    3. Empathetic Templates (offline safety net)
 
-Training Data Collection (Phase 2):
-  Every Gemini/Ollama response is silently saved to SQLite for future fine-tuning.
+Training Data Collection:
+    Every Groq/Ollama response is silently saved to SQLite for future fine-tuning.
 """
 import uuid
 import logging
@@ -19,7 +19,7 @@ from app.ml.emotion_model import predict_emotion
 from app.ml.situation_model import detect_situation
 from app.ml.decision_engine import decide_response
 from app.ml import conversation_memory as memory
-from app.ml.gemini_service import generate_reply as gemini_reply, is_available as gemini_available
+from app.ml.groq_service import generate_reply as groq_reply, is_available as groq_available
 from app.ml.ollama_service import generate_reply as ollama_reply, is_available as ollama_available
 from app.ml.training_collector import save_response
 
@@ -47,9 +47,9 @@ def chat(payload: ChatRequest):
     # Store user message in memory
     memory.add_message(session_id, "user", raw_message, emotion)
 
-    # ─── Tier 1: Smart Template Engine (fast, always offline) ─────
-    # Gets a fallback reply + knows whether this needs an LLM
-    reply, actions, needs_llm = decide_response(
+    # ─── Tier 1: Template fallback (always ready) ──────────────────
+    # Gets a fallback reply in case Groq is unavailable
+    reply, actions, _ = decide_response(
         emotion=emotion,
         situation=situation,
         user_message=raw_message,
@@ -57,21 +57,21 @@ def chat(payload: ChatRequest):
     )
     source = "smart_templates"
 
-    # ─── Tier 2: Gemini (best quality, rate-limited) ──────────────
-    if needs_llm and gemini_available():
-        gemini_response = gemini_reply(
+    # ─── Tier 2: Groq (primary chat engine) ───────────────────────
+    if groq_available():
+        groq_response = groq_reply(
             history=history,
             user_message=raw_message,
             emotion=emotion,
             confidence=confidence,
             situation=situation,
         )
-        if gemini_response:
-            reply = gemini_response
-            source = "gemini"
+        if groq_response:
+            reply = groq_response
+            source = "groq"
 
-    # ─── Tier 3: Ollama (local LLM, free, unlimited) ─────────────
-    if needs_llm and source == "smart_templates" and ollama_available():
+    # ─── Tier 3: Ollama (local LLM fallback) ─────────────────────
+    if source == "smart_templates" and ollama_available():
         ollama_response = ollama_reply(
             history=history,
             user_message=raw_message,
@@ -83,8 +83,8 @@ def chat(payload: ChatRequest):
             reply = ollama_response
             source = "ollama"
 
-    # ─── Phase 2: Save training data (Gemini + Ollama only) ───────
-    if source in ("gemini", "ollama"):
+    # ─── Save training data (Groq + Ollama only) ────────────────
+    if source in ("groq", "ollama"):
         save_response(
             session_id=session_id,
             user_message=raw_message,
@@ -100,16 +100,17 @@ def chat(payload: ChatRequest):
 
     # ─── Terminal Logging ─────────────────────────────────────────
     conv_len = memory.get_conversation_length(session_id)
-    tier_icon = {"gemini": "🌐", "ollama": "🦙", "smart_templates": "📝"}.get(source, "❓")
+    tier_icon = {"groq": "⚡", "ollama": "🦙", "smart_templates": "📝"}.get(source, "❓")
+    reply_preview = reply[:100] + ("..." if len(reply) > 100 else "")
     logger.info("=" * 60)
-    logger.info(f"📩 USER:       {raw_message}")
-    logger.info(f"💭 SENTIMENT:  {sentiment} ({sent_conf:.2f})")
-    logger.info(f"🎭 EMOTION:    {emotion} ({confidence:.2f})")
-    logger.info(f"📍 SITUATION:  {situation}")
-    logger.info(f"🤖 REPLY:      {reply[:100]}{'...' if len(reply) > 100 else ''}")
-    logger.info(f"{tier_icon} SOURCE:     {source}")
-    logger.info(f"📝 SESSION:    {session_id[:8]}... ({conv_len} msgs)")
-    logger.info(f"⚡ ACTIONS:    {actions}")
+    logger.info("📩 USER:       %s", raw_message)
+    logger.info("💭 SENTIMENT:  %s (%.2f)", sentiment, sent_conf)
+    logger.info("🎭 EMOTION:    %s (%.2f)", emotion, confidence)
+    logger.info("📍 SITUATION:  %s", situation)
+    logger.info("🤖 REPLY:      %s", reply_preview)
+    logger.info("%s SOURCE:     %s", tier_icon, source)
+    logger.info("📝 SESSION:    %s... (%s msgs)", session_id[:8], conv_len)
+    logger.info("⚡ ACTIONS:    %s", actions)
     logger.info("=" * 60)
 
     return ChatResponse(
