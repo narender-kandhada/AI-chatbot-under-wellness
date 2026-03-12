@@ -469,6 +469,38 @@ export const AFFIRMATIONS = [
     "Your heart knows the way. Trust it. 💚",
     "Even on hard days, you're growing.",
     "Be proud of who you're becoming. ✨",
+
+    // Additional wellness affirmations
+    "Your effort today matters.",
+    "You are learning and evolving every day.",
+    "Peace begins with a single deep breath.",
+    "Your story is still unfolding.",
+    "Kindness to yourself changes everything.",
+    "You are allowed to take up space.",
+    "Your mind deserves calm and care.",
+    "Small progress is still progress.",
+    "Every day is a chance to reset.",
+    "You are stronger than yesterday.",
+    "Let today be gentle with you.",
+    "You are worthy of rest.",
+    "Your growth is happening quietly.",
+    "It's okay to pause and breathe.",
+    "Hope is always within reach.",
+    "Your journey is unique and valuable.",
+    "You deserve moments of joy.",
+    "The present moment is enough.",
+    "You are capable of healing.",
+    "Your courage matters more than perfection.",
+    "Even tiny wins deserve celebration.",
+    "Be patient with your progress.",
+    "You are building a brighter future.",
+    "Your heart is resilient.",
+    "Each day holds a new opportunity.",
+    "You deserve inner peace.",
+    "Growth takes time — trust it.",
+    "You are allowed to start again.",
+    "Your presence makes a difference.",
+    "You are becoming your best self."
 ];
 
 export function getDailyAffirmation(): string {

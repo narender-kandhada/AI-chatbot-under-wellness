@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, Animated, useColorScheme, Image,
 } from 'react-native';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { CalmBackground } from '../../components/AmbientBackground';
 import { MoodSelector, MoodType } from '../../components/MoodSelector';
@@ -19,7 +21,7 @@ function getGreeting() {
   return { text: 'Good night', emoji: '🌙' };
 }
 
-export default function CheckInScreen() {
+function HomeScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = colors[scheme];
   const isDark = scheme === 'dark';
@@ -28,6 +30,8 @@ export default function CheckInScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(15)).current;
   const [streak, setStreak] = useState<StreakData>({ currentStreak: 0, lastCheckInDate: '', totalCheckIns: 0 });
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
 
   useEffect(() => {
     Animated.parallel([
@@ -35,6 +39,7 @@ export default function CheckInScreen() {
       Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
     ]).start();
     loadStreak();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadStreak = async () => {
@@ -52,56 +57,60 @@ export default function CheckInScreen() {
 
   return (
     <CalmBackground>
-      <View style={styles.container}>
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <View style={styles.headerRow}>
-            <View style={styles.brandLeft}>
-              <View style={[styles.logoWrap, isDark && styles.logoWrapDark]}>
-                <Image source={DEPARTMENT_LOGO} style={styles.logo} resizeMode="contain" />
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <View style={[styles.container, { paddingTop: insets.top || spacing.xxl + spacing.md, paddingBottom: tabBarHeight + spacing.lg }]}> 
+          <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+            <View style={styles.headerRow}>
+              <View style={styles.brandLeft}>
+                <View style={[styles.logoWrap, isDark && styles.logoWrapDark]}>
+                  <Image source={DEPARTMENT_LOGO} style={styles.logo} resizeMode="contain" />
+                </View>
+                <Text style={[styles.brandText, { color: theme.text }]}>Wellness for MRCE</Text>
               </View>
-              <Text style={[styles.brandText, { color: theme.text }]}>Wellness for MRCE</Text>
-            </View>
 
-            <View style={styles.logoRowRight}>
-              <View style={[styles.logoWrap, isDark && styles.logoWrapDark]}>
-                <Image source={COLLEGE_LOGO} style={styles.logo} resizeMode="contain" />
+              <View style={styles.logoRowRight}>
+                <View style={[styles.logoWrap, isDark && styles.logoWrapDark]}>
+                  <Image source={COLLEGE_LOGO} style={styles.logo} resizeMode="contain" />
+                </View>
               </View>
             </View>
-          </View>
-          <Text style={styles.emoji}>{greeting.emoji}</Text>
-          <Text style={[styles.greeting, { color: theme.primary }]}>{greeting.text}</Text>
-          <Text style={[styles.title, { color: theme.text }]}>How are you feeling?</Text>
+            <Text style={styles.emoji}>{greeting.emoji}</Text>
+            <Text style={[styles.greeting, { color: theme.primary }]}>{greeting.text}</Text>
+            <Text style={[styles.title, { color: theme.text }]}>How are you feeling?</Text>
 
-          {/* Daily Affirmation */}
-          <View style={[styles.affirmationCard, { backgroundColor: theme.surfaceTint, borderColor: theme.primary + '20' }]}>
-            <Text style={[styles.affirmationText, { color: theme.textSecondary }]}>
-              {affirmation}
-            </Text>
-          </View>
-        </Animated.View>
-
-        <View style={styles.moodSection}>
-          <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>Tap your mood to start chatting 🌿</Text>
-          <MoodSelector selectedMood={null} onSelectMood={handleMoodSelect} />
-        </View>
-
-        <View style={styles.footer}>
-          {streak.currentStreak > 0 && (
-            <View style={[styles.streakBadge, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <Text style={styles.streakEmoji}>🔥</Text>
-              <Text style={[styles.streakText, { color: theme.text }]}>
-                {streak.currentStreak} day{streak.currentStreak !== 1 ? 's' : ''} streak
+            {/* Daily Affirmation */}
+            <View style={[styles.affirmationCard, { backgroundColor: theme.surfaceTint + 'CC' }]}> 
+              <Text style={[styles.affirmationText, { color: theme.textSecondary }]}> 
+                <Text style={{fontSize: 18, marginRight: 4}}>“</Text>{affirmation}<Text style={{fontSize: 18, marginLeft: 4}}>”</Text>
               </Text>
             </View>
-          )}
-          <Text style={[styles.footerText, { color: theme.textLight }]}>
-            Your space. Your pace. No pressure. 💚
-          </Text>
+          </Animated.View>
+
+          <View style={styles.moodSection}>
+            <Text style={[styles.moodLabel, { color: theme.textSecondary }]}>Tap your mood to start chatting 🌿</Text>
+            <MoodSelector selectedMood={null} onSelectMood={handleMoodSelect} />
+          </View>
+
+          <View style={styles.footer}>
+            {streak.currentStreak > 0 && (
+              <View style={[styles.streakBadge, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                <Text style={styles.streakEmoji}>🔥</Text>
+                <Text style={[styles.streakText, { color: theme.text }]}>
+                  {streak.currentStreak} day{streak.currentStreak !== 1 ? 's' : ''} streak
+                </Text>
+              </View>
+            )}
+            <Text style={[styles.footerText, { color: theme.textLight }]}>
+              Your space. Your pace. No pressure. 💚
+            </Text>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
     </CalmBackground>
   );
 }
+
+export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: spacing.xl, paddingTop: spacing.xxl + spacing.lg, justifyContent: 'space-between' },
@@ -116,13 +125,17 @@ const styles = StyleSheet.create({
   greeting: { fontSize: typography.sizes.base, fontWeight: '600', marginBottom: spacing.xs },
   title: { fontSize: typography.sizes.xxxl, fontWeight: '800', marginBottom: spacing.lg, lineHeight: typography.sizes.xxxl * 1.15 },
   affirmationCard: {
-    padding: spacing.md, borderRadius: borderRadius.xl, borderWidth: 1,
+    paddingVertical: spacing.lg, paddingHorizontal: spacing.lg, borderRadius: borderRadius.xl,
     marginBottom: spacing.md,
+    // No border, softer background
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: 'rgba(0,0,0,0.03)', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 6, elevation: 1,
   },
-  affirmationText: { fontSize: typography.sizes.base, fontStyle: 'italic', lineHeight: typography.sizes.base * 1.6, textAlign: 'center' },
+  affirmationText: { fontSize: typography.sizes.base, fontStyle: 'italic', lineHeight: typography.sizes.base * 1.6, textAlign: 'center', opacity: 0.95 },
   moodSection: { marginBottom: spacing.lg },
   moodLabel: { fontSize: typography.sizes.sm, fontWeight: '600', marginBottom: spacing.md, textAlign: 'center' },
-  footer: { alignItems: 'center', paddingBottom: spacing.sm, gap: spacing.sm },
+  footer: { alignItems: 'center', gap: spacing.sm },
   streakBadge: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,

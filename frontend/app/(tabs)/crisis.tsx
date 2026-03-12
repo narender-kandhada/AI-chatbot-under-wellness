@@ -39,11 +39,11 @@ export default function CrisisScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={[styles.hero, { backgroundColor: theme.surface }]}>
           <View style={[styles.heroIcon, { backgroundColor: theme.warmAccent + '30' }]}>
-            <Heart size={32} color={theme.warmAccentDark} fill={theme.warmAccent + '40'} />
+              <Heart size={32} color={theme.warmAccentDark} fill={theme.warmAccent + '40'} />
           </View>
-          <Text style={[styles.heroTitle, { color: theme.text }]}>You don't have to{'\n'}go through this alone</Text>
+          <Text style={[styles.heroTitle, { color: theme.text }]}>You don&apos;t have to{'\n'}go through this alone</Text>
           <Text style={[styles.heroText, { color: theme.textSecondary }]}>
-            If you're going through a difficult time, reaching out is a sign of strength. Help is always available. 💚
+            If you&apos;re going through a difficult time, reaching out is a sign of strength. Help is always available. 💚
           </Text>
         </View>
 
@@ -78,8 +78,8 @@ export default function CrisisScreen() {
         <View style={[styles.reminderBox, { backgroundColor: theme.surface, borderColor: theme.borderLight }]}>
           <Text style={[styles.reminderTitle, { color: theme.text }]}>💚 Remember</Text>
           <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• You deserve support and care</Text>
-          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• It's okay to ask for help</Text>
-          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• This feeling won't last forever</Text>
+          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• It&apos;s okay to ask for help</Text>
+          <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• This feeling won&apos;t last forever</Text>
           <Text style={[styles.reminderText, { color: theme.textSecondary }]}>• You are not a burden</Text>
         </View>
 

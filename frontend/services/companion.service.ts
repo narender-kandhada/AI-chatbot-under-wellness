@@ -47,4 +47,22 @@ export async function sendMessageToCompanion(
     throw error;
   }
 }
+
+export async function checkBackendConnection(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/`, {
+      method: 'GET',
+      headers: DEFAULT_HEADERS,
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 console.log("API_BASE_URL:", API_BASE_URL);

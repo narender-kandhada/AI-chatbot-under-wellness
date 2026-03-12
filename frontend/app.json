@@ -10,9 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.narenderkandhada.innercircle",
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "Allow $(PRODUCT_NAME) to use speech recognition.",
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone."
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use the microphone.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "web": {
@@ -26,7 +28,15 @@
       "expo-web-browser",
       "expo-sqlite",
       "expo-speech-recognition",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.5"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -37,6 +47,12 @@
         "android.permission.POST_NOTIFICATIONS"
       ],
       "package": "com.narenderkandhada.boltexponativewind"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5cb07228-0198-4cf4-9a1a-441c65b78d1c"
+      }
     }
   }
 }
