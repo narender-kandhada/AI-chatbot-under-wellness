@@ -1,0 +1,4 @@
+# Force EAS cloud builds to use Continuous Native Generation (prebuild)
+# so app.json config/plugins (including expo-build-properties) are applied.
+android/
+ios/
