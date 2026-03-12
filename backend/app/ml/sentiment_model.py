@@ -10,8 +10,14 @@ import joblib
 # Absolute-safe path to model
 MODEL_PATH = Path(__file__).resolve().parent / "models" / "sentiment.pkl"
 
-# Load model once (on server start)
-model = joblib.load(MODEL_PATH)
+# Lazy-load model (avoids crash when .pkl doesn't exist yet, e.g. during Docker build)
+_model = None
+
+def _get_model():
+    global _model
+    if _model is None:
+        _model = joblib.load(MODEL_PATH)
+    return _model
 
 def predict_sentiment(text: str):
     """
@@ -19,6 +25,7 @@ def predict_sentiment(text: str):
         label (str): positive / negative
         confidence (float): pseudo-confidence
     """
+    model = _get_model()
     # Try predict_proba first (Logistic Regression, Naive Bayes)
     if hasattr(model, 'predict_proba'):
         try:
