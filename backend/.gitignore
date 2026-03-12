@@ -25,7 +25,6 @@ env/
 
 # Notebook artifacts
 .ipynb_checkpoints/
-notebooks/.ipynb_checkpoints/
 
 # Build/distribution artifacts
 build/
@@ -33,11 +32,17 @@ dist/
 *.egg-info/
 *.egg
 
-# ML/training generated artifacts
+# ML models & data (large binary files)
 app/ml/models/*.pkl
 app/ml/models/*.joblib
+app/ml/models/*.png
+app/ml/data/*.csv
+
+# Temp training artifacts
 temp_training/*.joblib
 temp_training/synthetic_qa.jsonl
+
+# Production training artifacts
 production_training/dataset.jsonl
 production_training/import_raw.jsonl
 production_training/evaluation_report.json

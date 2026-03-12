@@ -1,17 +1,17 @@
-# 🐍 InnerCircle Backend
+# InnerCircle Backend
 
-FastAPI backend with ML-powered emotion detection, Groq chat responses, and contextual response generation.
+FastAPI backend with ML-powered emotion detection, Groq-based chat, and contextual response generation.
 
-## 🚀 Setup
+## Setup
 
 ```bash
 python -m venv venv
 venv\Scripts\activate          # Windows
-source venv/bin/activate       # macOS/Linux
+source venv/bin/activate       # macOS / Linux
 
 pip install -r requirements.txt
 
-# Create .env with your Groq API key
+# Create .env
 echo GROQ_API_KEY=your_key_here > .env
 
 # Start server
@@ -20,14 +20,15 @@ python -m uvicorn app.main:app --reload
 # → Docs: http://127.0.0.1:8000/docs
 ```
 
-## 📂 Structure
+## Structure
 
 ```
 app/
 ├── api/
 │   ├── chat.py             # POST /chat — hybrid router (templates + Groq)
 │   ├── emotion.py          # POST /emotion/analyze
-│   └── safety.py           # POST /safety/check
+│   ├── safety.py           # POST /safety/check
+│   └── training.py         # Training endpoints (temp + production)
 ├── ml/
 │   ├── preprocessing.py    # Text cleaning
 │   ├── sentiment_model.py  # TF-IDF + LinearSVC classifier
@@ -35,43 +36,54 @@ app/
 │   ├── situation_model.py  # Keyword scoring (8 situations)
 │   ├── decision_engine.py  # Smart router → hosted AI or templates
 │   ├── groq_service.py     # Groq chat integration
-│   ├── conversation_memory.py # Session-based history tracking
-│   ├── keyword_extractor.py   # Topic extraction
-│   └── models/
-│       └── sentiment.pkl   # Trained sentiment model
+│   ├── openrouter_service.py   # OpenRouter fallback
+│   ├── ollama_service.py       # Ollama local fallback
+│   ├── conversation_memory.py  # Session-based history
+│   ├── keyword_extractor.py    # Topic extraction
+│   ├── training_collector.py   # Auto-save quality responses
+│   ├── temp_training_service.py        # Quick local training loop
+│   ├── production_training_service.py  # Production dataset pipeline
+│   ├── train/
+│   │   └── train_sentiment.py  # Trains sentiment model from CSV
+│   ├── models/
+│   │   └── sentiment.pkl       # Trained model (generated)
+│   └── data/
+│       └── *.csv               # Training datasets
 ├── schemas/
 │   ├── chat.py             # ChatRequest / ChatResponse
-│   └── emotion.py          # EmotionRequest / EmotionResponse
+│   ├── emotion.py          # EmotionRequest / EmotionResponse
+│   └── training.py         # Training schemas
 ├── core/
-│   └── config.py           # Settings (GROQ_API_KEY, etc.)
-└── main.py                 # FastAPI app + CORS
+│   ├── config.py           # Settings (env vars)
+│   └── logging.py          # Logging setup
+├── storage/
+│   └── database.py         # Database layer
+└── main.py                 # FastAPI app + CORS + routers
 ```
 
-## 🤖 Hybrid Response System
+## Hybrid Response System
 
-### Flow
 ```
 User message → ML Pipeline → Decision Engine
-                                 ├── Simple (greetings, yes/no) → Templates
-                                 └── Complex (>3 words, ongoing chat) → Groq
+                                 ├── Simple → Templates (instant)
+                                 └── Complex → Groq LLM (contextual)
 ```
 
-### Decision Engine Routing
 | Condition | Route |
 |-----------|-------|
 | Greetings ("hi", "hey") | Templates (instant) |
 | Short affirmations ("yes", "ok") | Templates (instant) |
-| Messages >3 words | **Groq** (contextual) |
-| Conversation 4+ messages | **Groq** (context-aware) |
-| Negative emotion detected | **Groq** (empathetic) |
+| Messages >3 words | Groq (contextual) |
+| Conversation 4+ messages | Groq (context-aware) |
+| Negative emotion detected | Groq (empathetic) |
 
-### Hosted AI
+### AI Models
+
 - **Primary:** Groq `llama-3.3-70b-versatile`
-- **Fallback model:** Groq `llama-3.1-8b-instant`
-- **Backup path:** Ollama local model if Groq is unavailable
-- **System prompt:** Warm wellness companion personality
+- **Fallback:** Groq `llama-3.1-8b-instant`
+- **Local backup:** Ollama (if Groq unavailable)
 
-## 📡 API Reference
+## API Reference
 
 ### `POST /chat/`
 ```json
@@ -110,43 +122,64 @@ User message → ML Pipeline → Decision Engine
 }
 ```
 
-## 🔧 Environment
+## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `GROQ_API_KEY` | Groq API key | Yes |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GROQ_API_KEY` | Yes | — | Groq API key |
+| `OPENROUTER_API_KEY` | No | — | OpenRouter API key |
+| `ENV` | No | `development` | `development` or `production` |
+| `PORT` | No | `8000` | Server port |
 
-- Python 3.11+
-- CORS enabled for all origins
-- Auto-reload with `--reload` flag
+## Deployment
 
-## 🧪 Temporary Training Path
+### Railway
 
-The backend now includes a separate temporary training workspace under `backend/temp_training`.
+```bash
+railway login
+railway init
+railway up
+# Set env vars in Railway dashboard
+```
 
-Purpose:
-- Generate up to 1000 synthetic question/answer pairs with Ollama.
-- Build a fast local retrieval model from those pairs.
-- Test responses without touching the main chat pipeline.
+Uses [railway.json](railway.json) + [Dockerfile](Dockerfile).
 
-Routes:
-- `POST /training/temp/generate` to generate synthetic pairs.
-- `POST /training/temp/build` to build the temporary retrieval model.
-- `POST /training/temp/respond` to query the temporary trained model.
-- `GET /training/temp/status` to inspect dataset and model status.
+### Fly.io
 
-Note:
-- This path is a fast local training loop for iteration.
-- It is not full LLM fine-tuning.
+```bash
+fly launch
+fly deploy
+fly secrets set GROQ_API_KEY=your_key ENV=production
+```
 
-## 🏭 Production Training Path
+Uses [fly.toml](fly.toml) + Dockerfile.
 
-The backend now includes a production-oriented dataset workflow under `backend/production_training`.
+## Training Workflows
 
-Purpose:
-- Generate higher-quality synthetic examples with richer metadata.
-- Evaluate dataset quality before any fine-tuning attempt.
-- Export LoRA-ready train/validation files and scaffold configs for Colab or GPU training.
+### Temporary Training
+
+Quick local loop — generates synthetic QA pairs with Ollama and builds a retrieval model.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /training/temp/status` | Dataset & model status |
+| `POST /training/temp/generate` | Generate synthetic pairs |
+| `POST /training/temp/build` | Build retrieval model |
+| `POST /training/temp/respond` | Query temp model |
+
+### Production Training
+
+Higher-quality dataset pipeline with evaluation and LoRA export.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /training/production/status` | Dataset status |
+| `POST /training/production/generate` | Generate examples |
+| `POST /training/production/clean` | Clean dataset |
+| `POST /training/production/evaluate` | Evaluate quality |
+| `POST /training/production/export-lora` | Export LoRA files |
+
+Artifacts are written to `production_training/`.
 
 Routes:
 - `GET /training/production/status`

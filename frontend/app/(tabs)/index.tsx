@@ -8,8 +8,8 @@ import { MoodSelector, MoodType } from '../../components/MoodSelector';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 import { saveMoodEntry, updateStreak, getStreak, getDailyAffirmation, type StreakData } from '../../services/storage.service';
 
-const COLLEGE_LOGO = require('../../assets/images/college_logo.png.png');
-const DEPARTMENT_LOGO = require('../../assets/images/department_logo.png.png');
+const COLLEGE_LOGO = require('../../assets/images/college_logo.png');
+const DEPARTMENT_LOGO = require('../../assets/images/department_logo.png');
 
 function getGreeting() {
   const h = new Date().getHours();

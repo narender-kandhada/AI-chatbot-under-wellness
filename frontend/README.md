@@ -1,25 +1,25 @@
-# 📱 InnerCircle Frontend
+# InnerCircle Frontend
 
-React Native (Expo) mobile app with voice input/output, immersive live voice experience, glossy UI, and full backend integration.
+React Native (Expo) mobile app with voice input/output, live voice sessions, and full backend integration.
 
-## 🚀 Setup
+## Setup
 
 ```bash
 npm install
 
 # Configure backend URL
-echo EXPO_PUBLIC_API_URL=https://your-ngrok-url.ngrok-free.dev > .env
+echo EXPO_PUBLIC_API_URL=http://localhost:8000 > .env
 
-# First time: build dev client (required for native modules)
+# First time: build dev client (native modules require compilation)
 npx expo run:android
 
-# Subsequent: just start Metro
+# Subsequent launches
 npx expo start -c --dev-client
 ```
 
-> **Important:** Use dev build, NOT Expo Go. Native modules (`expo-speech-recognition`) require compilation.
+> **Important:** Use a dev build, NOT Expo Go. Native modules (`expo-speech-recognition`) require compilation.
 
-## 📂 Structure
+## Structure
 
 ```
 app/
@@ -33,8 +33,7 @@ app/
 ├── chat.tsx                # AI Chat + Voice + Live Mode
 ├── journal.tsx             # Saved conversations
 ├── breathing.tsx           # Breathing exercises
-├── meditation.tsx          # Guided meditation
-└── reflection.tsx          # Reflection & insights
+└── meditation.tsx          # Guided meditation
 
 components/
 ├── LiveOverlay.tsx          # Full-screen live voice overlay
@@ -57,27 +56,23 @@ constants/
 └── theme.ts                 # Design system (colors, spacing, typography)
 ```
 
-## 🎙️ Voice Features
+## Voice Features
 
 ### Quick Mic (STT)
-- Tap 🎤 button → white modal → speak → auto-sends as text
+- Tap mic button → white modal → speak → auto-sends as text
 - Uses `expo-speech-recognition` (on-device STT)
 
-### Live Mode (Live Voice)
-- Tap 📡 button → full-screen dark overlay
-- Animated blue/teal waveform (3 overlapping blobs)
+### Live Mode
+- Tap live button → full-screen dark overlay with animated waveform
 - **States:** listening → processing → speaking → listening (auto-loop)
-- Continuous STT (`continuous: true`) — minimal system sounds
-- On end: all messages sync to chat history
+- Continuous STT — messages sync to chat history when session ends
 
 ### TTS
-- 🔊 toggle in header (enabled by default)
+- Toggle in header (enabled by default)
 - AI replies auto-read aloud via `expo-speech`
-- Tap speaker on any AI bubble to re-hear it
+- Tap speaker on any AI bubble to re-hear
 
-## 🎨 Design System
-
-### Colors (Nature/Wellness Theme)
+## Design System
 
 | | Light | Dark |
 |---|---|---|
@@ -87,17 +82,34 @@ constants/
 
 ### Live Overlay
 - Background: `#060612` (near-black blue)
-- Waveform: Blue (#1976D2) → Teal (#00ACC1) → Cyan (#26C6DA) blobs
-- End button: Red (#D32F2F)
+- Waveform: Blue → Teal → Cyan animated blobs
+- End button: Red (`#D32F2F`)
 
-## 📡 Backend Integration
-
-Backend currently uses Groq as primary hosted model with Ollama fallback; frontend API contracts are unchanged.
+## Backend Integration
 
 | Screen | API Calls |
 |--------|-----------|
-| **Chat** | `POST /chat/` + `POST /safety/check` (parallel) |
-| **Chat (Live)** | Same — routes through existing HTTP endpoints |
+| Chat | `POST /chat/` + `POST /safety/check` (parallel) |
+| Chat (Live) | Same endpoints via HTTP |
+| Check-In | `POST /emotion/analyze` |
+
+## Deployment
+
+### EAS Build (Android/iOS)
+
+```bash
+npx eas login
+npx eas build --platform android --profile preview
+```
+
+### Web Export (Vercel / Netlify)
+
+```bash
+npx expo export --platform web
+# Deploy dist/ folder to your static host
+```
+
+Set `EXPO_PUBLIC_API_URL` to your deployed backend URL before building.
 | **Check-In** | `POST /emotion/analyze` |
 | **Reflection** | `POST /emotion/analyze` |
 

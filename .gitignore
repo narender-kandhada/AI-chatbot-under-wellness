@@ -1,37 +1,41 @@
 # ─── Python ───────────────────────────────────────────
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 *.egg-info/
+*.egg
 dist/
 build/
+
+# ─── Virtual environments ────────────────────────────
 venv/
 .venv/
-*.egg
+env/
 
 # ─── Node / Frontend ─────────────────────────────────
 node_modules/
 .expo/
-dist/
+.expo-shared/
 web-build/
 *.tsbuildinfo
 
 # ─── Android / iOS builds ────────────────────────────
-android/app/build/
-ios/build/
+frontend/android/app/build/
+frontend/android/build/
+frontend/ios/build/
+frontend/ios/Pods/
+*.apk
+*.aab
+*.ipa
 
 # ─── Environment / Secrets ────────────────────────────
 .env
-.env.local
-.env.production
 .env.*
-backend/.env
-frontend/.env
-backend/venv/
-backend/.venv/
+!.env.example
+
 # ─── IDE ──────────────────────────────────────────────
 .vscode/
 .idea/
@@ -44,23 +48,33 @@ backend/.venv/
 Thumbs.db
 desktop.ini
 
-# ─── ML Models (large) ───────────────────────────────
+# ─── ML Models & Data (large) ────────────────────────
 *.pkl
 *.joblib
 backend/app/ml/data/*.csv
+backend/app/ml/models/*.png
+
+# ─── Training artifacts ──────────────────────────────
+backend/temp_training/*.joblib
+backend/temp_training/synthetic_qa.jsonl
+backend/production_training/dataset.jsonl
+backend/production_training/import_raw.jsonl
+backend/production_training/evaluation_report.json
+backend/production_training/generation_progress.json
+backend/production_training/lora_export/train.jsonl
+backend/production_training/lora_export/valid.jsonl
+backend/production_training/lora_export/dataset_manifest.json
 backend/production_training/lora_export/outputs/
-backend/production_training/lora_export/*.safetensors
-backend/production_training/lora_export/*.bin
 backend/production_training/lora_export/checkpoint*/
 backend/production_training/lora_export/runs/
 backend/production_training/lora_export/wandb/
-backend/production_training/lora_export/.ipynb_checkpoints/
+backend/production_training/lora_export/*.safetensors
+backend/production_training/lora_export/*.bin
 
-# ─── Jupyter / Colab ──────────────────────────────────
-*.ipynb_checkpoints/
+# ─── Jupyter / Colab ─────────────────────────────────
 .ipynb_checkpoints/
 
-# ─── Local temp/runtime data ──────────────────────────
+# ─── Local temp/runtime data ─────────────────────────
 tmp/
 temp/
 *.tmp
@@ -68,12 +82,11 @@ temp/
 # ─── Logs ─────────────────────────────────────────────
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# ─── ngrok ────────────────────────────────────────────
+# ─── Misc ─────────────────────────────────────────────
 ngrok.exe
 ngrok
-venv/
-backend/venv/
-__pycache__/
-*.pyc
-.env
+*.db
+*.sqlite3
