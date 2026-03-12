@@ -24,6 +24,7 @@ from app.ml.groq_service import generate_reply as groq_reply, is_available as gr
 from app.ml.openrouter_service import generate_reply as openrouter_reply, is_available as openrouter_available
 from app.ml.ollama_service import generate_reply as ollama_reply, is_available as ollama_available
 from app.ml.training_collector import save_response
+from app.core.config import settings
 
 logger = logging.getLogger("uvicorn.error")
 

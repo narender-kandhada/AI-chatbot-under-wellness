@@ -57,11 +57,11 @@ export default function JournalScreen() {
 
                     <View style={styles.logoContainer}>
                         <Image
-                            source={require('../assets/images/college_logo.png.png')}
+                            source={require('../assets/images/college_logo.png')}
                             style={styles.logo}
                         />
                         <Image
-                            source={require('../assets/images/department_logo.png.png')}
+                            source={require('../assets/images/department_logo.png')}
                             style={styles.logo}
                         />
                     </View>

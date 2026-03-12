@@ -1,12 +1,21 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import chat, emotion, safety, training
 from app.core.config import settings
 
+logger = logging.getLogger("uvicorn.error")
+
 app = FastAPI(
     title="InnerCircle Backend",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+def _log_config():
+    logger.info("🔑 GROQ_API_KEY configured: %s", bool(settings.GROQ_API_KEY))
+    logger.info("🔑 OPENROUTER_API_KEY configured: %s", bool(settings.OPENROUTER_API_KEY))
+    logger.info("🌍 ENV: %s", settings.ENV)
 
 # ─── CORS Middleware ──────────────────────────────────────────────────
 app.add_middleware(
