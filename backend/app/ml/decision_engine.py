@@ -383,7 +383,7 @@ def decide_response(
     return reply, actions, False
 
 
-def _get_empathetic_fallback(emotion: str, situation: str, user_message: str) -> str:
+def _get_empathetic_fallback(emotion: str, situation: str, _user_message: str) -> str:
     """
     Get an empathetic fallback reply when hosted AI is unavailable.
 
@@ -431,7 +431,7 @@ def _get_empathetic_fallback(emotion: str, situation: str, user_message: str) ->
     return random.choice(responses)
 
 
-def _handle_short_response(text: str, words: set, history: list, emotion: str) -> str:
+def _handle_short_response(text: str, words: set, history: list, _emotion: str) -> str:
     """Handle short replies like 'yes', 'no', 'okay' with context."""
     # Look at what the AI asked last
     last_ai_msg = ""

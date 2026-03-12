@@ -23,13 +23,12 @@ DB_PATH = os.path.normpath(DB_PATH)
 # ─── Only collect from these sources (not templates) ─────────────────
 COLLECTABLE_SOURCES = {"groq", "ollama"}
 
-_db_initialized = False
+_collector_state = {"db_initialized": False}
 
 
 def _init_db():
     """Create the SQLite database and table if they don't exist."""
-    global _db_initialized
-    if _db_initialized:
+    if _collector_state["db_initialized"]:
         return
 
     try:
@@ -58,10 +57,10 @@ def _init_db():
         """)
         conn.commit()
         conn.close()
-        _db_initialized = True
-        logger.info(f"📚 Training collector ready: {DB_PATH}")
-    except Exception as e:
-        logger.warning(f"⚠️ Training collector init failed: {e}")
+        _collector_state["db_initialized"] = True
+        logger.info("📚 Training collector ready: %s", DB_PATH)
+    except (sqlite3.Error, OSError) as exc:
+        logger.warning("⚠️ Training collector init failed: %s", exc)
 
 
 def save_response(
@@ -107,9 +106,14 @@ def save_response(
         ))
         conn.commit()
         conn.close()
-        logger.info(f"📚 Training pair saved [{source}] emotion={emotion} ({cursor.lastrowid} total)")
-    except Exception as e:
-        logger.warning(f"⚠️ Training collector save failed: {e}")
+        logger.info(
+            "📚 Training pair saved [%s] emotion=%s (%s total)",
+            source,
+            emotion,
+            cursor.lastrowid,
+        )
+    except (sqlite3.Error, OSError) as exc:
+        logger.warning("⚠️ Training collector save failed: %s", exc)
 
 
 def get_stats() -> dict:
@@ -130,7 +134,7 @@ def get_stats() -> dict:
 
         conn.close()
         return {"total": total, "by_source": by_source, "by_emotion": by_emotion}
-    except Exception:
+    except sqlite3.Error:
         return {"total": 0, "by_source": {}, "by_emotion": {}}
 
 
@@ -163,5 +167,5 @@ def export_jsonl(output_path: str = "training_data.jsonl"):
             }
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
-    logger.info(f"📤 Exported {len(rows)} training pairs to {output_path}")
+    logger.info("📤 Exported %s training pairs to %s", len(rows), output_path)
     return len(rows)

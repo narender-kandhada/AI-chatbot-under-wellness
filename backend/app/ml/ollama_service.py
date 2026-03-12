@@ -50,7 +50,7 @@ def _is_ollama_running() -> bool:
         req = urllib.request.Request(f"{OLLAMA_BASE_URL}/api/tags")
         with urllib.request.urlopen(req, timeout=3) as resp:
             return resp.status == 200
-    except Exception:
+    except (urllib.error.URLError, TimeoutError):
         return False
 
 
@@ -79,10 +79,10 @@ def _call_ollama(model: str, messages: list[dict]) -> str | None:
             result = json.loads(resp.read().decode("utf-8"))
             reply = result.get("message", {}).get("content", "").strip()
             return reply if reply else None
-    except urllib.error.URLError as e:
-        raise ConnectionError(f"Ollama not reachable: {e}")
-    except Exception as e:
-        raise RuntimeError(f"Ollama error: {e}")
+    except urllib.error.URLError as exc:
+        raise ConnectionError(f"Ollama not reachable: {exc}") from exc
+    except (json.JSONDecodeError, KeyError, ValueError) as exc:
+        raise RuntimeError(f"Ollama error: {exc}") from exc
 
 
 def is_available() -> bool:
@@ -134,16 +134,16 @@ def generate_reply(
                 # Safety: cap length
                 if len(reply) > 500:
                     reply = reply[:497] + "..."
-                logger.info(f"🦙 Ollama [{model}] replied in {elapsed:.1f}s")
+                logger.info("🦙 Ollama [%s] replied in %.1fs", model, elapsed)
                 return reply
 
         except ConnectionError:
             logger.info("ℹ️ Ollama server not reachable")
             return None
-        except Exception as e:
-            logger.warning(f"⚠️ Ollama [{model}] failed: {e}")
+        except RuntimeError as exc:
+            logger.warning("⚠️ Ollama [%s] failed: %s", model, exc)
             if model == MODEL_PRIMARY:
-                logger.info(f"⚡ Trying {MODEL_FALLBACK}...")
+                logger.info("⚡ Trying %s...", MODEL_FALLBACK)
                 continue
             return None
 

@@ -3,11 +3,12 @@ Chat API Endpoint — Groq-powered AI Chat.
 
 Routes messages through:
     1. Groq (primary hosted AI engine for chat responses)
-    2. Ollama (local LLM fallback when Groq is unavailable)
-    3. Empathetic Templates (offline safety net)
+    2. OpenRouter (cloud LLM fallback when Groq is rate-limited)
+    3. Ollama (local LLM fallback for development)
+    4. Empathetic Templates (offline safety net)
 
 Training Data Collection:
-    Every Groq/Ollama response is silently saved to SQLite for future fine-tuning.
+    Every LLM response is silently saved to SQLite for future fine-tuning.
 """
 import uuid
 import logging
@@ -20,6 +21,7 @@ from app.ml.situation_model import detect_situation
 from app.ml.decision_engine import decide_response
 from app.ml import conversation_memory as memory
 from app.ml.groq_service import generate_reply as groq_reply, is_available as groq_available
+from app.ml.openrouter_service import generate_reply as openrouter_reply, is_available as openrouter_available
 from app.ml.ollama_service import generate_reply as ollama_reply, is_available as ollama_available
 from app.ml.training_collector import save_response
 
@@ -70,7 +72,20 @@ def chat(payload: ChatRequest):
             reply = groq_response
             source = "groq"
 
-    # ─── Tier 3: Ollama (local LLM fallback) ─────────────────────
+    # ─── Tier 3: OpenRouter (cloud fallback) ──────────────────────
+    if source == "smart_templates" and openrouter_available():
+        openrouter_response = openrouter_reply(
+            history=history,
+            user_message=raw_message,
+            emotion=emotion,
+            confidence=confidence,
+            situation=situation,
+        )
+        if openrouter_response:
+            reply = openrouter_response
+            source = "openrouter"
+
+    # ─── Tier 4: Ollama (local dev fallback) ─────────────────────
     if source == "smart_templates" and ollama_available():
         ollama_response = ollama_reply(
             history=history,
@@ -83,8 +98,8 @@ def chat(payload: ChatRequest):
             reply = ollama_response
             source = "ollama"
 
-    # ─── Save training data (Groq + Ollama only) ────────────────
-    if source in ("groq", "ollama"):
+    # ─── Save training data (LLM responses only) ────────────────
+    if source in ("groq", "openrouter", "ollama"):
         save_response(
             session_id=session_id,
             user_message=raw_message,
@@ -100,7 +115,7 @@ def chat(payload: ChatRequest):
 
     # ─── Terminal Logging ─────────────────────────────────────────
     conv_len = memory.get_conversation_length(session_id)
-    tier_icon = {"groq": "⚡", "ollama": "🦙", "smart_templates": "📝"}.get(source, "❓")
+    tier_icon = {"groq": "⚡", "openrouter": "🌐", "ollama": "🦙", "smart_templates": "📝"}.get(source, "❓")
     reply_preview = reply[:100] + ("..." if len(reply) > 100 else "")
     logger.info("=" * 60)
     logger.info("📩 USER:       %s", raw_message)
