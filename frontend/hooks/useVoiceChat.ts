@@ -1,6 +1,11 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import * as Speech from 'expo-speech';
 
+const TTS_STRATEGY = process.env.EXPO_PUBLIC_TTS_STRATEGY || 'fast';
+const TTS_MAX_CHARS = Number(process.env.EXPO_PUBLIC_TTS_MAX_CHARS || 220);
+
+const DUPLICATE_SPEAK_WINDOW_MS = 15000;
+
 // ─── Safe imports for native-only modules ───────────────────────────────────
 // expo-speech-recognition requires a custom dev build (native module).
 // In Expo Go this module doesn't exist, so we fall back to no-op stubs
@@ -30,6 +35,10 @@ export function useVoiceChat() {
     const [transcript, setTranscript] = useState('');
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [ttsEnabled, setTtsEnabled] = useState(true);
+    const speakRequestIdRef = useRef(0);
+    const speakInProgressRef = useRef(false);
+    const lastSpokenRef = useRef<{ text: string; at: number } | null>(null);
+    const speakWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // ─── Live Mode ──────────────────────────────────────────────────────
     const [isLiveMode, setIsLiveMode] = useState(false);
@@ -137,39 +146,107 @@ export function useVoiceChat() {
             ''
         ).trim();
 
+    const pickTtsText = (text: string) => {
+        if (TTS_STRATEGY === 'full') return text;
+
+        if (text.length <= TTS_MAX_CHARS) return text;
+
+        const firstSentence = text.match(/^[\s\S]{1,400}?[.!?](?:\s|$)/)?.[0]?.trim();
+        if (firstSentence && firstSentence.length <= TTS_MAX_CHARS) {
+            return firstSentence;
+        }
+
+        const cutoff = text.slice(0, TTS_MAX_CHARS);
+        const lastPause = Math.max(
+            cutoff.lastIndexOf('. '),
+            cutoff.lastIndexOf('! '),
+            cutoff.lastIndexOf('? '),
+            cutoff.lastIndexOf(', ')
+        );
+
+        if (lastPause > 80) return cutoff.slice(0, lastPause + 1).trim();
+        return cutoff.trim();
+    };
+
     const speak = useCallback((text: string) => {
+        if (speakInProgressRef.current) {
+            console.log('TTS: ignored (already speaking or generating)');
+            return;
+        }
+
         const clean = stripEmoji(text);
         if (!clean) { console.log('TTS: empty after emoji strip'); return; }
+        const ttsText = pickTtsText(clean);
 
-        console.log('TTS: speaking →', clean.substring(0, 60));
-        try { Speech.stop(); } catch { }
+        const now = Date.now();
+        if (
+            lastSpokenRef.current &&
+            lastSpokenRef.current.text === ttsText &&
+            now - lastSpokenRef.current.at < DUPLICATE_SPEAK_WINDOW_MS
+        ) {
+            console.log('TTS: ignored duplicate text window');
+            return;
+        }
+
+        speakInProgressRef.current = true;
+        lastSpokenRef.current = { text: ttsText, at: now };
+
+        console.log('TTS: speaking →', ttsText.substring(0, 60));
         setIsSpeaking(true);
         if (isLiveModeRef.current) setLiveState('speaking');
 
-        try {
-            Speech.speak(clean, {
+        const requestId = ++speakRequestIdRef.current;
+
+        const finishSpeaking = () => {
+            if (requestId !== speakRequestIdRef.current) return;
+            if (speakWatchdogRef.current) {
+                clearTimeout(speakWatchdogRef.current);
+                speakWatchdogRef.current = null;
+            }
+            setIsSpeaking(false);
+            speakInProgressRef.current = false;
+        };
+
+        void (async () => {
+            try {
+                await Speech.stop();
+            } catch { }
+
+            if (requestId !== speakRequestIdRef.current) return;
+
+            speakWatchdogRef.current = setTimeout(() => {
+                finishSpeaking();
+            }, 20000);
+
+            Speech.speak(ttsText, {
                 language: 'en-US',
-                pitch: 1.0,
-                rate: 0.95,
-                onStart: () => console.log('TTS: playback started'),
                 onDone: () => {
-                    console.log('TTS: done');
-                    setIsSpeaking(false);
+                    finishSpeaking();
                     if (isLiveModeRef.current) {
                         setTimeout(() => {
                             if (isLiveModeRef.current) startListeningLive();
                         }, 600);
                     }
                 },
-                onStopped: () => { console.log('TTS: stopped'); setIsSpeaking(false); },
+                onStopped: () => {
+                    finishSpeaking();
+                },
+                onError: (error) => {
+                    console.warn('TTS: device speech failed', error);
+                    finishSpeaking();
+                }
             });
-        } catch (e) {
-            console.warn('TTS: Speech.speak failed', e);
-            setIsSpeaking(false);
-        }
+        })();
     }, [startListeningLive]);
 
     const stopSpeaking = useCallback(() => {
+        speakRequestIdRef.current += 1;
+        if (speakWatchdogRef.current) {
+            clearTimeout(speakWatchdogRef.current);
+            speakWatchdogRef.current = null;
+        }
+        speakInProgressRef.current = false;
+        lastSpokenRef.current = null;
         Speech.stop();
         setIsSpeaking(false);
     }, []);
@@ -206,6 +283,10 @@ export function useVoiceChat() {
     // ─── Cleanup ────────────────────────────────────────────────────────
     useEffect(() => () => {
         try { ExpoSpeechRecognitionModule?.stop(); } catch { }
+        if (speakWatchdogRef.current) {
+            clearTimeout(speakWatchdogRef.current);
+            speakWatchdogRef.current = null;
+        }
         Speech.stop();
     }, []);
 

@@ -7,6 +7,9 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str = ""
     PORT: int = 8000
 
+    TTS_MAX_TEXT_CHARS: int = 1200
+    TTS_TIMEOUT_SECONDS: int = 90
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

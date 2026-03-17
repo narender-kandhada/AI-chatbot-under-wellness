@@ -2,6 +2,11 @@
 
 FastAPI backend with ML-powered emotion detection, Groq-based chat, and contextual response generation.
 
+## Notes
+
+- Text-to-speech is handled on the frontend using device TTS (`expo-speech`).
+- Backend no longer exposes Coqui/Piper synthesis routes.
+
 ## Setup
 
 ```bash
@@ -28,7 +33,7 @@ app/
 │   ├── chat.py             # POST /chat — hybrid router (templates + Groq)
 │   ├── emotion.py          # POST /emotion/analyze
 │   ├── safety.py           # POST /safety/check
-│   └── training.py         # Training endpoints (temp + production)
+│   ├── training.py         # Training endpoints (temp + production)
 ├── ml/
 │   ├── preprocessing.py    # Text cleaning
 │   ├── sentiment_model.py  # TF-IDF + LinearSVC classifier

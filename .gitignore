@@ -13,6 +13,7 @@ build/
 # ─── Virtual environments ────────────────────────────
 venv/
 .venv/
+.venv*/
 env/
 
 # ─── Node / Frontend ─────────────────────────────────
@@ -90,3 +91,6 @@ ngrok.exe
 ngrok
 *.db
 *.sqlite3
+
+# ─── Python local env in backend ──────────────────────
+backend/.venv311/

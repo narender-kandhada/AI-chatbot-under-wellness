@@ -70,6 +70,8 @@ export default function ChatScreen() {
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const sessionId = useRef(`session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
+  const sendInFlightRef = useRef(false);
+  const lastSentRef = useRef<{ text: string; at: number } | null>(null);
 
   // ─── Voice + Live Mode ────────────────────────────────────────────
   const voice = useVoiceChat();
@@ -173,8 +175,25 @@ export default function ChatScreen() {
 
   // ─── Handlers ─────────────────────────────────────────────────────
   const handleSendWithText = async (text: string) => {
-    if (!text.trim()) return;
-    const userMsg: Message = { id: Date.now().toString(), text: text.trim(), isUser: true, timestamp: 'Just now' };
+    const normalizedText = text.trim();
+    if (!normalizedText) return;
+
+    const now = Date.now();
+    if (sendInFlightRef.current) {
+      return;
+    }
+    if (
+      lastSentRef.current &&
+      lastSentRef.current.text === normalizedText &&
+      now - lastSentRef.current.at < 2000
+    ) {
+      return;
+    }
+
+    sendInFlightRef.current = true;
+    lastSentRef.current = { text: normalizedText, at: now };
+
+    const userMsg: Message = { id: Date.now().toString(), text: normalizedText, isUser: true, timestamp: 'Just now' };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setInputText('');
@@ -187,8 +206,8 @@ export default function ChatScreen() {
 
     try {
       const [chatRes, safetyRes] = await Promise.all([
-        sendMessageToCompanion({ message: text, mood: params.mood || 'neutral', session_id: sessionId, history }),
-        checkSafety({ text }).catch(() => null),
+        sendMessageToCompanion({ message: normalizedText, mood: params.mood || 'neutral', session_id: sessionId, history }),
+        checkSafety({ text: normalizedText }).catch(() => null),
       ]);
       setIsTyping(false);
       if (safetyRes && safetyRes.riskLevel === 'high') setSafetyAlert(safetyRes);
@@ -209,9 +228,11 @@ export default function ChatScreen() {
         setSpeakingMsgId(aiMsgId);
         voice.speak(chatRes.reply);
       }
+      sendInFlightRef.current = false;
     } catch {
       setIsTyping(false);
       setMessages((p) => [...p, { id: (Date.now() + 2).toString(), text: "I'm having trouble connecting. Please try again. 💚", isUser: false, timestamp: 'Just now' }]);
+      sendInFlightRef.current = false;
     }
   };
 
@@ -225,16 +246,6 @@ export default function ChatScreen() {
     } else {
       setShowQuickMic(true);
       voice.startListening();
-    }
-  };
-
-  const handleBubbleSpeak = (msgId: string, text: string) => {
-    if (speakingMsgId === msgId) {
-      voice.stopSpeaking();
-      setSpeakingMsgId(null);
-    } else {
-      setSpeakingMsgId(msgId);
-      voice.speak(text);
     }
   };
 
@@ -276,6 +287,7 @@ export default function ChatScreen() {
 
       liveProcessingRef.current = false;
       // speak() will auto-restart listening via hook
+      setSpeakingMsgId(aiMsg.id);
       voice.speak(chatRes.reply);
     } catch {
       setLiveCaptionText("Having trouble connecting... Let's try again.");
@@ -439,7 +451,11 @@ export default function ChatScreen() {
                 message={m.text}
                 isUser={m.isUser}
                 timestamp={m.timestamp}
-                onSpeak={!m.isUser ? (text) => handleBubbleSpeak(m.id, text) : undefined}
+                onSpeak={m.isUser ? undefined : (text) => {
+                  setSpeakingMsgId(m.id);
+                  voice.stopSpeaking();
+                  voice.speak(text);
+                }}
                 isSpeaking={speakingMsgId === m.id}
               />
             </View>

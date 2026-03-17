@@ -1,19 +1,119 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme, Alert, Platform,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { BarChart3, TrendingUp, Download, BookOpen, Flame, Wind, Leaf } from 'lucide-react-native';
+import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { CalmBackground } from '../../components/AmbientBackground';
 import { colors, moodColors, spacing, typography, borderRadius } from '../../constants/theme';
 import {
-    getMoodHistory, getWeeklyMoodSummary, getStreak, getJournalEntries,
+    getWeeklyMoodSummary, getStreak, getJournalEntries,
     exportAllData, type MoodEntry, type StreakData,
 } from '../../services/storage.service';
 
 const MOOD_EMOJIS: Record<string, string> = {
     happy: '😊', okay: '😐', calm: '😌', tired: '😴', anxious: '😰', sad: '😢',
+};
+
+const escapeHtml = (value: string) =>
+    value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+const formatDate = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString('en-IN', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
+const buildExportHtml = (rawJson: string) => {
+    const parsed = JSON.parse(rawJson) as {
+        exportedAt: string;
+        app: string;
+        streak?: { currentStreak?: number; totalCheckIns?: number };
+        moodHistory?: Array<{ date: string; mood: string; emotion?: string }>;
+        journalEntries?: Array<{ date: string; mood: string; messages?: Array<{ role: string; text: string }> }>;
+    };
+
+    const moodRows = (parsed.moodHistory ?? []).map((entry) => `
+        <tr>
+            <td>${escapeHtml(formatDate(entry.date))}</td>
+            <td>${escapeHtml(entry.mood)}</td>
+            <td>${escapeHtml(entry.emotion ?? '-')}</td>
+        </tr>
+    `).join('');
+
+    const journalBlocks = (parsed.journalEntries ?? []).map((entry, index) => {
+        const messages = (entry.messages ?? []).map((msg) => `
+            <li><strong>${escapeHtml(msg.role)}:</strong> ${escapeHtml(msg.text)}</li>
+        `).join('');
+
+        return `
+            <section>
+                <h3>Entry ${index + 1}</h3>
+                <p><strong>Date:</strong> ${escapeHtml(formatDate(entry.date))}</p>
+                <p><strong>Mood:</strong> ${escapeHtml(entry.mood)}</p>
+                <ul>${messages || '<li>No messages</li>'}</ul>
+            </section>
+        `;
+    }).join('');
+
+    return `
+        <html>
+            <head>
+                <meta charset="utf-8" />
+                <title>InnerCircle Data Export</title>
+                <style>
+                    body { font-family: Arial, sans-serif; color: #1f2937; padding: 24px; }
+                    h1 { margin-bottom: 4px; }
+                    h2 { margin-top: 28px; margin-bottom: 8px; }
+                    p { margin: 6px 0; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+                    th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 12px; }
+                    th { background: #f3f4f6; }
+                    section { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-top: 10px; }
+                    ul { margin: 8px 0 0 16px; padding: 0; }
+                    li { margin-bottom: 6px; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <h1>${escapeHtml(parsed.app || 'InnerCircle Wellness')}</h1>
+                <p><strong>Exported:</strong> ${escapeHtml(formatDate(parsed.exportedAt || new Date().toISOString()))}</p>
+
+                <h2>Streak Summary</h2>
+                <p><strong>Current streak:</strong> ${parsed.streak?.currentStreak ?? 0} day(s)</p>
+                <p><strong>Total check-ins:</strong> ${parsed.streak?.totalCheckIns ?? 0}</p>
+
+                <h2>Mood History</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Mood</th>
+                            <th>Emotion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${moodRows || '<tr><td colspan="3">No mood entries</td></tr>'}
+                    </tbody>
+                </table>
+
+                <h2>Journal Entries</h2>
+                ${journalBlocks || '<p>No journal entries</p>'}
+            </body>
+        </html>
+    `;
 };
 
 export default function InsightsScreen() {
@@ -46,15 +146,27 @@ export default function InsightsScreen() {
     const handleExport = async () => {
         try {
             const data = await exportAllData();
-            const FS = require('expo-file-system');
-            const fileUri = (FS.documentDirectory || '') + 'innercircle_export.json';
-            await FS.writeAsStringAsync(fileUri, data);
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(fileUri);
-            } else {
-                Alert.alert('Export Ready', 'Your data has been saved.');
+            const filename = `innercircle_export_${new Date().toISOString().slice(0, 10)}.pdf`;
+            const html = buildExportHtml(data);
+
+            if (Platform.OS === 'web') {
+                await Print.printAsync({ html });
+                Alert.alert('Export Ready', 'Use the print dialog to save as PDF.');
+                return;
             }
-        } catch (e) {
+
+            const { uri } = await Print.printToFileAsync({ html });
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(uri, {
+                    mimeType: 'application/pdf',
+                    dialogTitle: 'Export InnerCircle Data',
+                    UTI: 'com.adobe.pdf',
+                });
+            } else {
+                Alert.alert('Export Ready', `Your PDF was created as ${filename}.`);
+            }
+        } catch {
             Alert.alert('Error', 'Failed to export data.');
         }
     };

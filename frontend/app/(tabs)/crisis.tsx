@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useColorScheme, Linking, Alert } from 'react-native';
 import { CalmBackground } from '../../components/AmbientBackground';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
@@ -33,10 +33,54 @@ const resources = [
 export default function CrisisScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = colors[scheme];
+  const scrollRef = useRef<ScrollView | null>(null);
+  const [resourcesSectionY, setResourcesSectionY] = useState(0);
+
+  const handleReachTrustedPerson = useCallback(async () => {
+    const message = encodeURIComponent('Hey, I\'m having a hard time right now and could use some support. Are you available to talk?');
+    const smsCandidates = [
+      `smsto:?body=${message}`,
+      `sms:?body=${message}`,
+      `sms:&body=${message}`,
+    ];
+
+    try {
+      for (const smsUrl of smsCandidates) {
+        const canOpen = await Linking.canOpenURL(smsUrl);
+        if (!canOpen) continue;
+        await Linking.openURL(smsUrl);
+        return;
+      }
+
+      Alert.alert('Unable to open messaging app', 'Please text someone you trust from your contacts.');
+    } catch {
+      Alert.alert('Unable to open messaging app', 'Please text someone you trust from your contacts.');
+    }
+  }, []);
+
+  const handleViewSupportResources = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: Math.max(resourcesSectionY - spacing.md, 0), animated: true });
+  }, [resourcesSectionY]);
+
+  const handleCallResource = useCallback(async (resourceName: string, phoneNumber: string) => {
+    const sanitized = phoneNumber.replace(/[^\d+]/g, '');
+    const telUrl = `tel:${sanitized}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(telUrl);
+      if (!canOpen) {
+        Alert.alert('Unable to open phone dialer', `Please call ${resourceName} at ${phoneNumber}.`);
+        return;
+      }
+      await Linking.openURL(telUrl);
+    } catch {
+      Alert.alert('Unable to open phone dialer', `Please call ${resourceName} at ${phoneNumber}.`);
+    }
+  }, []);
 
   return (
     <CalmBackground warm>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={[styles.hero, { backgroundColor: theme.surface }]}>
           <View style={[styles.heroIcon, { backgroundColor: theme.warmAccent + '30' }]}>
               <Heart size={32} color={theme.warmAccentDark} fill={theme.warmAccent + '40'} />
@@ -48,19 +92,25 @@ export default function CrisisScreen() {
         </View>
 
         <View style={styles.actionsRow}>
-          <Button title="Reach out to someone I trust" onPress={() => { }} fullWidth />
+          <Button title="Reach out to someone I trust" onPress={handleReachTrustedPerson} fullWidth />
           <View style={{ height: spacing.md }} />
-          <Button title="View support resources" onPress={() => { }} fullWidth variant="secondary" />
+          <Button title="View support resources" onPress={handleViewSupportResources} fullWidth variant="secondary" />
         </View>
 
-        <Card title="Support Resources" accentColor={theme.warmAccentDark}>
+        <View onLayout={(event) => setResourcesSectionY(event.nativeEvent.layout.y)}>
+          <Card title="Support Resources" accentColor={theme.warmAccentDark}>
           <Text style={[styles.resourcesIntro, { color: theme.textSecondary }]}>
             These are placeholder numbers. In a real app, these would connect to actual crisis helplines.
           </Text>
-        </Card>
+          </Card>
+        </View>
 
         {resources.map((r) => (
-          <TouchableOpacity key={r.id} activeOpacity={0.7}>
+          <TouchableOpacity
+            key={r.id}
+            activeOpacity={0.7}
+            onPress={() => handleCallResource(r.name, r.number)}
+          >
             <View style={[styles.resourceCard, { backgroundColor: theme.surface, borderColor: theme.borderLight }]}>
               <View style={[styles.accentBar, { backgroundColor: r.color }]} />
               <View style={[styles.resourceIcon, { backgroundColor: r.color + '15' }]}>
@@ -70,6 +120,7 @@ export default function CrisisScreen() {
                 <Text style={[styles.resourceName, { color: theme.text }]}>{r.name}</Text>
                 <Text style={[styles.resourceDesc, { color: theme.textSecondary }]}>{r.desc}</Text>
                 <Text style={[styles.resourceNumber, { color: r.color }]}>{r.number}</Text>
+                <Text style={[styles.resourceHint, { color: theme.textLight }]}>Tap to call</Text>
               </View>
             </View>
           </TouchableOpacity>
@@ -86,7 +137,7 @@ export default function CrisisScreen() {
         <View style={[styles.emergencyBox, { backgroundColor: theme.warmAccent + '15', borderColor: theme.warmAccentDark + '20' }]}>
           <Text style={[styles.emergencyTitle, { color: theme.text }]}>⚠️ In case of emergency</Text>
           <Text style={[styles.emergencyText, { color: theme.textSecondary }]}>
-            If you or someone is in immediate danger, please call emergency services (911) or go to your nearest emergency room.
+            If you or someone is in immediate danger, please call emergency services (108) or go to your nearest emergency room.
           </Text>
         </View>
       </ScrollView>
@@ -117,6 +168,7 @@ const styles = StyleSheet.create({
   resourceName: { fontSize: typography.sizes.base, fontWeight: '700', marginBottom: 2 },
   resourceDesc: { fontSize: typography.sizes.sm, marginBottom: spacing.xs },
   resourceNumber: { fontSize: typography.sizes.base, fontWeight: '700' },
+  resourceHint: { fontSize: typography.sizes.xs, fontWeight: '600', marginTop: 2 },
   reminderBox: { padding: spacing.lg, borderRadius: borderRadius.xl, marginTop: spacing.xl, borderWidth: 1 },
   reminderTitle: { fontSize: typography.sizes.lg, fontWeight: '800', marginBottom: spacing.md },
   reminderText: { fontSize: typography.sizes.base, lineHeight: typography.sizes.base * 1.7, marginBottom: spacing.xs },

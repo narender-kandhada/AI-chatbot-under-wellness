@@ -11,17 +11,51 @@ export default function WelcomeScreen() {
   const theme = colors[scheme];
   const [isBackendConnected, setIsBackendConnected] = useState(false);
   const [isCheckingBackend, setIsCheckingBackend] = useState(true);
+  const [backendProgress, setBackendProgress] = useState(0);
   const fadeTitle = useRef(new Animated.Value(0)).current;
   const fadeContent = useRef(new Animated.Value(0)).current;
   const fadeBtn = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(20)).current;
+  const backendProgressAnim = useRef(new Animated.Value(0)).current;
+  const backendProgressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const clearProgressInterval = useCallback(() => {
+    if (backendProgressInterval.current) {
+      clearInterval(backendProgressInterval.current);
+      backendProgressInterval.current = null;
+    }
+  }, []);
+
+  const startProgressSimulation = useCallback(() => {
+    clearProgressInterval();
+    setBackendProgress((prev) => (prev > 8 ? prev : 8));
+    backendProgressInterval.current = setInterval(() => {
+      setBackendProgress((prev) => {
+        if (prev >= 94) {
+          return prev;
+        }
+        return Math.min(prev + 2, 94);
+      });
+    }, 140);
+  }, [clearProgressInterval]);
 
   const pingBackend = useCallback(async () => {
     setIsCheckingBackend(true);
+    startProgressSimulation();
     const connected = await checkBackendConnection();
     setIsBackendConnected(connected);
     setIsCheckingBackend(false);
-  }, []);
+    clearProgressInterval();
+    setBackendProgress(connected ? 100 : 0);
+  }, [clearProgressInterval, startProgressSimulation]);
+
+  useEffect(() => {
+    Animated.timing(backendProgressAnim, {
+      toValue: backendProgress,
+      duration: 220,
+      useNativeDriver: false,
+    }).start();
+  }, [backendProgress, backendProgressAnim]);
 
   useEffect(() => {
     Animated.stagger(300, [
@@ -50,8 +84,9 @@ export default function WelcomeScreen() {
     return () => {
       clearInterval(interval);
       subscription.remove();
+      clearProgressInterval();
     };
-  }, [pingBackend]);
+  }, [clearProgressInterval, pingBackend]);
 
   return (
     <CalmBackground>
@@ -70,17 +105,23 @@ export default function WelcomeScreen() {
           <Text style={[styles.disclaimerText, { color: theme.textLight }]}>
             InnerCircle is a supportive companion — not a therapist or doctor. If you&apos;re in crisis, please reach out to a professional. 💚
           </Text>
-          <View style={styles.backendStatusRow}>
-            <View
-              style={[
-                styles.backendDot,
-                { backgroundColor: isBackendConnected ? theme.success : theme.emotionAngry },
-              ]}
-            />
-            <Text style={[styles.backendStatusText, { color: theme.textSecondary }]}>
-              {isBackendConnected
-                ? 'Backend connected'
-                : (isCheckingBackend ? 'Waking backend...' : 'Backend not connected')}
+          <View style={styles.backendLoader}>
+            <View style={[styles.backendLoaderTrack, { backgroundColor: theme.borderLight }]}> 
+              <Animated.View
+                style={[
+                  styles.backendLoaderFill,
+                  {
+                    backgroundColor: isBackendConnected ? theme.success : theme.primary,
+                    width: backendProgressAnim.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              />
+            </View>
+            <Text style={[styles.backendLoaderPercent, { color: theme.textSecondary }]}>
+              {Math.round(backendProgress)}%
             </Text>
           </View>
         </Animated.View>
@@ -112,8 +153,9 @@ const styles = StyleSheet.create({
   },
   disclaimerTitle: { fontSize: typography.sizes.sm, fontWeight: '700', marginBottom: spacing.sm },
   disclaimerText: { fontSize: typography.sizes.sm, lineHeight: typography.sizes.sm * 1.7 },
-  backendStatusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-  backendDot: { width: 10, height: 10, borderRadius: 5 },
-  backendStatusText: { fontSize: typography.sizes.xs, fontWeight: '600' },
+  backendLoader: { marginTop: spacing.md, gap: spacing.xs },
+  backendLoaderTrack: { width: '100%', height: 8, borderRadius: 999, overflow: 'hidden' },
+  backendLoaderFill: { height: '100%', borderRadius: 999 },
+  backendLoaderPercent: { fontSize: typography.sizes.xs, fontWeight: '700', textAlign: 'right' },
   buttonContainer: { width: '100%' },
 });

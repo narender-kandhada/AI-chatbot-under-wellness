@@ -12,6 +12,9 @@ web-build/
 .env.*
 !.env.example
 
+# Local python virtual envs (if created in frontend by tooling)
+.venv*/
+
 # Expo generated types
 expo-env.d.ts
 

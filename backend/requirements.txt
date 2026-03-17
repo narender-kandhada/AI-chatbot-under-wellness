@@ -11,6 +11,11 @@ PyYAML==6.0.3
 scikit-learn==1.8.0
 joblib==1.5.3
 
+# ─── LLM / training stack ─────────────────────────────
+transformers==4.41.2
+torch==2.5.1
+torchaudio==2.5.1
+
 # ─── Training script (train_sentiment.py) ────────────
 pandas==3.0.1
 seaborn==0.13.2

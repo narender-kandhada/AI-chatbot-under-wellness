@@ -1,3 +1,5 @@
+# LoRA / SFT training dependencies
+# Keep versions flexible here for CUDA/runtime compatibility across environments.
 unsloth
 trl
 transformers

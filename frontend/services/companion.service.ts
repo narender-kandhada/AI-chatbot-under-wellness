@@ -31,7 +31,7 @@ export async function sendMessageToCompanion(
   data: ChatRequest
 ): Promise<ChatResponse> {
   try {
-    const response = await fetch(`${API_BASE_URL}/chat`, {
+    const response = await fetch(`${API_BASE_URL}/chat/`, {
       method: "POST",
       headers: DEFAULT_HEADERS,
       body: JSON.stringify(data),

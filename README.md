@@ -10,8 +10,10 @@ Chat uses local ML analysis with Groq as the primary hosted model and Ollama as 
 - Emotion-aware chat with contextual AI responses
 - Sentiment & emotion analysis (ML pipeline)
 - Safety risk detection with actionable recommendations
-- Voice UX — speech-to-text input + text-to-speech replies
+- Voice UX — speech-to-text input + device text-to-speech replies
 - Live voice mode (full-screen continuous conversation)
+- Insights data export as PDF
+- Crisis quick action for trusted-contact SMS composer
 - Breathing exercises, guided meditation, journaling
 - Dataset generation & LoRA export for fine-tuning
 
@@ -26,6 +28,11 @@ Backend (FastAPI)
         ├── Simple messages → Smart templates (instant)
         └── Complex messages → Groq LLM (contextual)
     → Ollama fallback (local)
+
+Frontend voice notes:
+- Speech-to-text uses `expo-speech-recognition` (dev build required)
+- Text-to-speech uses on-device `expo-speech`
+- Backend Coqui/Piper TTS routes are removed
 ```
 
 ## Tech Stack
@@ -132,6 +139,10 @@ npx expo export --platform web
 | `ENV` | Backend | No | `development` or `production` |
 | `PORT` | Backend | No | Server port (default: 8000) |
 | `EXPO_PUBLIC_API_URL` | Frontend | Yes | Backend URL |
+
+Optional frontend voice tuning:
+- `EXPO_PUBLIC_TTS_STRATEGY` (`fast` or `full`)
+- `EXPO_PUBLIC_TTS_MAX_CHARS` (default `220`)
 
 ## API Endpoints
 
