@@ -94,3 +94,4 @@ ngrok
 
 # ─── Python local env in backend ──────────────────────
 backend/.venv311/
+*.wav
