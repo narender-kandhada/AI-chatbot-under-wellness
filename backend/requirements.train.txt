@@ -1,0 +1,11 @@
+-r requirements.txt
+
+# ─── Optional heavy training/fine-tuning stack ───────────────────────
+transformers==4.41.2
+torch==2.5.1
+torchaudio==2.5.1
+
+# ─── Sentiment training script (train_sentiment.py) ─────────────────
+pandas==3.0.1
+seaborn==0.13.2
+matplotlib==3.10.8

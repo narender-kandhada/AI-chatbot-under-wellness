@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, useColorScheme } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Text, StyleSheet, TouchableOpacity, ActivityIndicator, Animated, useColorScheme, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { colors, gradients, spacing, typography, borderRadius } from '../constants/theme';
@@ -11,15 +11,26 @@ interface ButtonProps {
   disabled?: boolean;
   loading?: boolean;
   fullWidth?: boolean;
+  progress?: number;
 }
 
 export function Button({
-  title, onPress, variant = 'primary', disabled = false, loading = false, fullWidth = false,
+  title, onPress, variant = 'primary', disabled = false, loading = false, fullWidth = false, progress,
 }: ButtonProps) {
   const scheme = useColorScheme() ?? 'light';
   const theme = colors[scheme];
   const grad = gradients[scheme];
   const scale = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const nextProgress = Math.max(0, Math.min(progress ?? 0, 100));
+    Animated.timing(progressAnim, {
+      toValue: nextProgress,
+      duration: 220,
+      useNativeDriver: false,
+    }).start();
+  }, [progress, progressAnim]);
 
   const handlePressIn = () => {
     Animated.timing(scale, { toValue: 0.97, duration: 120, useNativeDriver: true }).start();
@@ -77,7 +88,24 @@ export function Button({
           colors={disabled ? ['#888', '#888'] : [...grad.buttonPrimary] as [string, string]}
           style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
         >
-          {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.text}>{title}</Text>}
+          {typeof progress === 'number' && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.progressFill,
+                {
+                  backgroundColor: theme.surfaceTint,
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          )}
+          <View style={styles.content}>
+            {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.text}>{title}</Text>}
+          </View>
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
@@ -91,6 +119,19 @@ const styles = StyleSheet.create({
   gradient: {
     paddingVertical: spacing.md, paddingHorizontal: spacing.xl,
     alignItems: 'center', justifyContent: 'center', borderRadius: borderRadius.full,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: borderRadius.full,
+  },
+  content: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   text: { color: '#FFFFFF', fontSize: typography.sizes.lg, fontWeight: '700' },
   ghost: {

@@ -4,7 +4,12 @@
     "slug": "wellness-mrce",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon_square.png",
+    "splash": {
+      "image": "./assets/images/icon_square.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -37,7 +42,8 @@
           }
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
@@ -47,6 +53,10 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.POST_NOTIFICATIONS"
       ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon_square.png",
+        "backgroundColor": "#FFFFFF"
+      },
       "package": "com.narenderkandhada.boltexponativewind"
     },
     "extra": {

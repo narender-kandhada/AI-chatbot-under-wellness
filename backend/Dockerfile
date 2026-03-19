@@ -14,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Train the sentiment model (generates .pkl from CSV data)
-RUN python -m app.ml.train.train_sentiment
+# Ensure runtime model exists (built offline and committed)
+RUN test -f app/ml/models/sentiment.pkl
 
 # Expose port (Railway/Render inject PORT env var)
 EXPOSE ${PORT:-8000}

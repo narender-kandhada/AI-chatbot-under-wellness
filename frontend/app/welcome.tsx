@@ -16,7 +16,6 @@ export default function WelcomeScreen() {
   const fadeContent = useRef(new Animated.Value(0)).current;
   const fadeBtn = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(20)).current;
-  const backendProgressAnim = useRef(new Animated.Value(0)).current;
   const backendProgressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const clearProgressInterval = useCallback(() => {
@@ -48,14 +47,6 @@ export default function WelcomeScreen() {
     clearProgressInterval();
     setBackendProgress(connected ? 100 : 0);
   }, [clearProgressInterval, startProgressSimulation]);
-
-  useEffect(() => {
-    Animated.timing(backendProgressAnim, {
-      toValue: backendProgress,
-      duration: 220,
-      useNativeDriver: false,
-    }).start();
-  }, [backendProgress, backendProgressAnim]);
 
   useEffect(() => {
     Animated.stagger(300, [
@@ -105,33 +96,15 @@ export default function WelcomeScreen() {
           <Text style={[styles.disclaimerText, { color: theme.textLight }]}>
             InnerCircle is a supportive companion — not a therapist or doctor. If you&apos;re in crisis, please reach out to a professional. 💚
           </Text>
-          <View style={styles.backendLoader}>
-            <View style={[styles.backendLoaderTrack, { backgroundColor: theme.borderLight }]}> 
-              <Animated.View
-                style={[
-                  styles.backendLoaderFill,
-                  {
-                    backgroundColor: isBackendConnected ? theme.success : theme.primary,
-                    width: backendProgressAnim.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ['0%', '100%'],
-                    }),
-                  },
-                ]}
-              />
-            </View>
-            <Text style={[styles.backendLoaderPercent, { color: theme.textSecondary }]}>
-              {Math.round(backendProgress)}%
-            </Text>
-          </View>
         </Animated.View>
 
         <Animated.View style={[styles.buttonContainer, { opacity: fadeBtn }]}>
           <Button
-            title={isBackendConnected ? "Let's begin" : 'Waiting for backend...'}
+            title="Let's begin"
             onPress={() => router.replace('(tabs)' as any)}
             disabled={!isBackendConnected}
-            loading={!isBackendConnected && isCheckingBackend}
+            loading={false}
+            progress={!isBackendConnected && isCheckingBackend ? backendProgress : undefined}
             fullWidth
           />
         </Animated.View>
@@ -153,9 +126,5 @@ const styles = StyleSheet.create({
   },
   disclaimerTitle: { fontSize: typography.sizes.sm, fontWeight: '700', marginBottom: spacing.sm },
   disclaimerText: { fontSize: typography.sizes.sm, lineHeight: typography.sizes.sm * 1.7 },
-  backendLoader: { marginTop: spacing.md, gap: spacing.xs },
-  backendLoaderTrack: { width: '100%', height: 8, borderRadius: 999, overflow: 'hidden' },
-  backendLoaderFill: { height: '100%', borderRadius: 999 },
-  backendLoaderPercent: { fontSize: typography.sizes.xs, fontWeight: '700', textAlign: 'right' },
   buttonContainer: { width: '100%' },
 });

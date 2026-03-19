@@ -13,6 +13,9 @@ venv/
 .ruff_cache/
 notebooks/
 .ipynb_checkpoints/
+app/ml/train/
+app/ml/data/mental_health_dataset.csv
+production_training/
 production_training/lora_export/outputs/
 production_training/lora_export/checkpoint*/
 production_training/lora_export/runs/
@@ -20,7 +23,6 @@ production_training/lora_export/wandb/
 production_training/lora_export/*.safetensors
 production_training/lora_export/*.bin
 temp_training/synthetic_qa.jsonl
-app/ml/models/*.pkl
 app/ml/models/*.png
 .git/
 .vscode/
