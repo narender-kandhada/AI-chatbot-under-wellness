@@ -1,15 +1,51 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Switch, useColorScheme } from 'react-native';
 import { CalmBackground } from '../../components/AmbientBackground';
 import { Card } from '../../components/Card';
 import { colors, spacing, typography, borderRadius } from '../../constants/theme';
 import { Shield, Trash2, EyeOff, Lock } from 'lucide-react-native';
+import { getPrivacySettings, savePrivacySettings } from '../../services/storage.service';
 
 export default function PrivacyScreen() {
   const scheme = useColorScheme() ?? 'light';
   const theme = colors[scheme];
   const [saveHistory, setSaveHistory] = useState(true);
   const [incognitoMode, setIncognitoMode] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSettings = async () => {
+      const settings = await getPrivacySettings();
+      if (!isMounted) return;
+      setSaveHistory(settings.saveHistory);
+      setIncognitoMode(settings.incognitoMode);
+    };
+
+    loadSettings();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSaveHistoryChange = async (value: boolean) => {
+    setSaveHistory(value);
+    const nextIncognito = value ? incognitoMode : false;
+    if (!value && incognitoMode) {
+      setIncognitoMode(false);
+    }
+    await savePrivacySettings({ saveHistory: value, incognitoMode: nextIncognito });
+  };
+
+  const handleIncognitoChange = async (value: boolean) => {
+    setIncognitoMode(value);
+    const nextSaveHistory = value ? false : saveHistory;
+    if (value) {
+      setSaveHistory(false);
+    }
+    await savePrivacySettings({ saveHistory: nextSaveHistory, incognitoMode: value });
+  };
 
   const principles = [
     { id: '1', icon: Lock, title: 'Your data belongs to you', desc: 'Everything you share stays on your device. We never sell or share your personal information.', color: theme.primary },
@@ -45,7 +81,7 @@ export default function PrivacyScreen() {
               <Text style={[styles.settingTitle, { color: theme.text }]}>Save conversation history</Text>
               <Text style={[styles.settingDesc, { color: theme.textSecondary }]}>Keep conversations for reflection</Text>
             </View>
-            <Switch value={saveHistory} onValueChange={setSaveHistory}
+            <Switch value={saveHistory} onValueChange={handleSaveHistoryChange}
               trackColor={{ false: scheme === 'dark' ? '#333' : '#E0E0E0', true: theme.primary + '50' }}
               thumbColor={saveHistory ? theme.primary : scheme === 'dark' ? '#666' : '#C8C8C8'}
             />
@@ -56,7 +92,7 @@ export default function PrivacyScreen() {
               <Text style={[styles.settingTitle, { color: theme.text }]}>Incognito mode</Text>
               <Text style={[styles.settingDesc, { color: theme.textSecondary }]}>No data saved, complete privacy</Text>
             </View>
-            <Switch value={incognitoMode} onValueChange={setIncognitoMode}
+            <Switch value={incognitoMode} onValueChange={handleIncognitoChange}
               trackColor={{ false: scheme === 'dark' ? '#333' : '#E0E0E0', true: theme.emotionAnxious + '50' }}
               thumbColor={incognitoMode ? theme.emotionAnxious : scheme === 'dark' ? '#666' : '#C8C8C8'}
             />

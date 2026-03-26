@@ -25,6 +25,23 @@ export default function WelcomeScreen() {
     }
   }, []);
 
+  const completeProgressSimulation = useCallback(async () => {
+    await new Promise<void>((resolve) => {
+      clearProgressInterval();
+      backendProgressInterval.current = setInterval(() => {
+        setBackendProgress((prev) => {
+          const next = Math.min(prev + 2, 100);
+          if (next >= 100) {
+            clearProgressInterval();
+            resolve();
+            return 100;
+          }
+          return next;
+        });
+      }, 140);
+    });
+  }, [clearProgressInterval]);
+
   const startProgressSimulation = useCallback(() => {
     clearProgressInterval();
     setBackendProgress((prev) => (prev > 8 ? prev : 8));
@@ -42,11 +59,17 @@ export default function WelcomeScreen() {
     setIsCheckingBackend(true);
     startProgressSimulation();
     const connected = await checkBackendConnection();
-    setIsBackendConnected(connected);
+    if (connected) {
+      await completeProgressSimulation();
+      setIsBackendConnected(true);
+      setIsCheckingBackend(false);
+      return;
+    }
+    setIsBackendConnected(false);
     setIsCheckingBackend(false);
     clearProgressInterval();
-    setBackendProgress(connected ? 100 : 0);
-  }, [clearProgressInterval, startProgressSimulation]);
+    setBackendProgress(0);
+  }, [clearProgressInterval, completeProgressSimulation, startProgressSimulation]);
 
   useEffect(() => {
     Animated.stagger(300, [

@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import * as Speech from 'expo-speech';
 
-const TTS_STRATEGY = process.env.EXPO_PUBLIC_TTS_STRATEGY || 'fast';
-const TTS_MAX_CHARS = Number(process.env.EXPO_PUBLIC_TTS_MAX_CHARS || 220);
+const TTS_STRATEGY = process.env.EXPO_PUBLIC_TTS_STRATEGY || 'full';
+const TTS_MAX_CHARS = Number(process.env.EXPO_PUBLIC_TTS_MAX_CHARS || 260);
 
 const DUPLICATE_SPEAK_WINDOW_MS = 15000;
 
@@ -168,6 +168,44 @@ export function useVoiceChat() {
         return cutoff.trim();
     };
 
+    const splitForSpeech = (text: string, maxChars: number) => {
+        const chunks: string[] = [];
+        let cursor = 0;
+
+        while (cursor < text.length) {
+            const remaining = text.length - cursor;
+            if (remaining <= maxChars) {
+                const tail = text.slice(cursor).trim();
+                if (tail) chunks.push(tail);
+                break;
+            }
+
+            const windowText = text.slice(cursor, cursor + maxChars);
+            const punctuationBreak = Math.max(
+                windowText.lastIndexOf('. '),
+                windowText.lastIndexOf('! '),
+                windowText.lastIndexOf('? '),
+                windowText.lastIndexOf('; '),
+                windowText.lastIndexOf(': '),
+                windowText.lastIndexOf(', ')
+            );
+            const spaceBreak = windowText.lastIndexOf(' ');
+
+            let end = cursor + maxChars;
+            if (punctuationBreak > 80) {
+                end = cursor + punctuationBreak + 1;
+            } else if (spaceBreak > 80) {
+                end = cursor + spaceBreak;
+            }
+
+            const part = text.slice(cursor, end).trim();
+            if (part) chunks.push(part);
+            cursor = end;
+        }
+
+        return chunks;
+    };
+
     const speak = useCallback((text: string) => {
         if (speakInProgressRef.current) {
             console.log('TTS: ignored (already speaking or generating)');
@@ -176,12 +214,15 @@ export function useVoiceChat() {
 
         const clean = stripEmoji(text);
         if (!clean) { console.log('TTS: empty after emoji strip'); return; }
-        const ttsText = pickTtsText(clean);
+        const ttsTexts = TTS_STRATEGY === 'fast'
+            ? [pickTtsText(clean)]
+            : splitForSpeech(clean, TTS_MAX_CHARS);
+        const dedupeText = ttsTexts.join(' ');
 
         const now = Date.now();
         if (
             lastSpokenRef.current &&
-            lastSpokenRef.current.text === ttsText &&
+            lastSpokenRef.current.text === dedupeText &&
             now - lastSpokenRef.current.at < DUPLICATE_SPEAK_WINDOW_MS
         ) {
             console.log('TTS: ignored duplicate text window');
@@ -189,9 +230,9 @@ export function useVoiceChat() {
         }
 
         speakInProgressRef.current = true;
-        lastSpokenRef.current = { text: ttsText, at: now };
+        lastSpokenRef.current = { text: dedupeText, at: now };
 
-        console.log('TTS: speaking →', ttsText.substring(0, 60));
+        console.log('TTS: speaking →', dedupeText.substring(0, 60));
         setIsSpeaking(true);
         if (isLiveModeRef.current) setLiveState('speaking');
 
@@ -214,28 +255,43 @@ export function useVoiceChat() {
 
             if (requestId !== speakRequestIdRef.current) return;
 
-            speakWatchdogRef.current = setTimeout(() => {
-                finishSpeaking();
-            }, 20000);
+            const speakChunkAt = (index: number) => {
+                if (requestId !== speakRequestIdRef.current) return;
 
-            Speech.speak(ttsText, {
-                language: 'en-US',
-                onDone: () => {
+                const nextText = ttsTexts[index];
+                if (!nextText) {
                     finishSpeaking();
                     if (isLiveModeRef.current) {
                         setTimeout(() => {
                             if (isLiveModeRef.current) startListeningLive();
                         }, 600);
                     }
-                },
-                onStopped: () => {
-                    finishSpeaking();
-                },
-                onError: (error) => {
-                    console.warn('TTS: device speech failed', error);
-                    finishSpeaking();
+                    return;
                 }
-            });
+
+                if (speakWatchdogRef.current) {
+                    clearTimeout(speakWatchdogRef.current);
+                }
+                speakWatchdogRef.current = setTimeout(() => {
+                    finishSpeaking();
+                }, 20000);
+
+                Speech.speak(nextText, {
+                    language: 'en-US',
+                    onDone: () => {
+                        speakChunkAt(index + 1);
+                    },
+                    onStopped: () => {
+                        finishSpeaking();
+                    },
+                    onError: (error) => {
+                        console.warn('TTS: device speech failed', error);
+                        finishSpeaking();
+                    }
+                });
+            };
+
+            speakChunkAt(0);
         })();
     }, [startListeningLive]);
 

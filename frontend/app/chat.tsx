@@ -1,17 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView, Linking,
   KeyboardAvoidingView, Platform, TouchableOpacity, Modal, Animated, Easing, useColorScheme, Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { CalmBackground } from '../components/AmbientBackground';
 import { ChatBubble } from '../components/ChatBubble';
 import { LiveOverlay } from '../components/LiveOverlay';
 import { colors, spacing, typography, borderRadius } from '../constants/theme';
-import { Send, ArrowLeft, Sparkles, AlertTriangle, Bookmark, Music, Wind, Leaf, Mic, Volume2, VolumeX, X, Radio } from 'lucide-react-native';
+import { Send, ArrowLeft, Sparkles, AlertTriangle, Bookmark, Music, Wind, Leaf, Mic, Volume2, VolumeX, X, Radio, EyeOff } from 'lucide-react-native';
 import { sendMessageToCompanion } from '../services/companion.service';
 import { checkSafety, SafetyResponse } from '../services/safety.service';
-import { saveJournalEntry, saveChat, type ChatMessage } from '../services/storage.service';
+import { saveJournalEntry, saveChat, getPrivacySettings, type ChatMessage } from '../services/storage.service';
 import { useVoiceChat } from '../hooks/useVoiceChat';
 
 // ─── Music Suggestions by Mood ─────────────────────────────────────
@@ -68,6 +69,7 @@ export default function ChatScreen() {
   const [showMusic, setShowMusic] = useState(false);
   const [journalSaved, setJournalSaved] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+  const [privacySettings, setPrivacySettings] = useState({ saveHistory: true, incognitoMode: false });
   const scrollViewRef = useRef<ScrollView>(null);
   const sessionId = useRef(`session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`).current;
   const sendInFlightRef = useRef(false);
@@ -160,13 +162,33 @@ export default function ChatScreen() {
   // Auto-save chat periodically
   useEffect(() => {
     if (messages.length > 1) {
-      const chatMessages: ChatMessage[] = messages.map(m => ({
-        id: m.id, text: m.text, isUser: m.isUser, timestamp: m.timestamp,
-        emotion: m.emotion, confidence: m.confidence, actions: m.actions,
-      }));
-      saveChat(sessionId, chatMessages);
+      const persistChat = async () => {
+        const privacy = await getPrivacySettings();
+        if (privacy.incognitoMode || !privacy.saveHistory) {
+          return;
+        }
+
+        const chatMessages: ChatMessage[] = messages.map(m => ({
+          id: m.id, text: m.text, isUser: m.isUser, timestamp: m.timestamp,
+          emotion: m.emotion, confidence: m.confidence, actions: m.actions,
+        }));
+        await saveChat(sessionId, chatMessages);
+      };
+
+      persistChat();
     }
   }, [messages]);
+
+  const refreshPrivacySettings = useCallback(async () => {
+    const settings = await getPrivacySettings();
+    setPrivacySettings(settings);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshPrivacySettings();
+    }, [refreshPrivacySettings])
+  );
 
   // Clear speaking state when TTS finishes
   useEffect(() => {
@@ -317,6 +339,12 @@ export default function ChatScreen() {
   };
 
   const handleSaveJournal = async () => {
+    const privacy = await getPrivacySettings();
+    if (privacy.incognitoMode || !privacy.saveHistory) {
+      Alert.alert('Privacy mode is on', 'Turn off Incognito mode and enable Save conversation history in Privacy settings to save journals.');
+      return;
+    }
+
     const chatMessages: ChatMessage[] = messages.map(m => ({
       id: m.id, text: m.text, isUser: m.isUser, timestamp: m.timestamp,
       emotion: m.emotion, confidence: m.confidence, actions: m.actions,
@@ -426,10 +454,14 @@ export default function ChatScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSaveJournal}
-              disabled={journalSaved || messages.length <= 1}
+              disabled={journalSaved || messages.length <= 1 || privacySettings.incognitoMode || !privacySettings.saveHistory}
               style={[styles.iconBtn, { borderColor: journalSaved ? theme.primary : theme.border }]}
             >
-              <Bookmark size={16} color={journalSaved ? theme.primary : theme.textLight} fill={journalSaved ? theme.primary : 'transparent'} />
+              {privacySettings.incognitoMode ? (
+                <EyeOff size={16} color={theme.textLight} />
+              ) : (
+                <Bookmark size={16} color={journalSaved ? theme.primary : theme.textLight} fill={journalSaved ? theme.primary : 'transparent'} />
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push({ pathname: 'reflection' } as any)}

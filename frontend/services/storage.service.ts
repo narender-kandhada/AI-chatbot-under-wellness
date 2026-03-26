@@ -54,6 +54,11 @@ export interface NotificationSettings {
     streakEnabled: boolean;
 }
 
+export interface PrivacySettings {
+    saveHistory: boolean;
+    incognitoMode: boolean;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // DATABASE INIT
 // ═══════════════════════════════════════════════════════════════
@@ -138,6 +143,21 @@ function initTables(): void {
             'INSERT INTO notification_settings (id, check_in_enabled, check_in_time, mindfulness_enabled, mindfulness_interval_hours, streak_enabled) VALUES (1, 0, "09:00", 0, 3, 0)'
         );
     }
+
+        database.execSync(`
+        CREATE TABLE IF NOT EXISTS privacy_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            save_history INTEGER NOT NULL DEFAULT 1,
+            incognito_mode INTEGER NOT NULL DEFAULT 0
+        );
+    `);
+
+        const privacyRow = database.getFirstSync<{ cnt: number }>('SELECT COUNT(*) as cnt FROM privacy_settings');
+        if (!privacyRow || privacyRow.cnt === 0) {
+                database.runSync(
+                        'INSERT INTO privacy_settings (id, save_history, incognito_mode) VALUES (1, 1, 0)'
+                );
+        }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -404,6 +424,43 @@ export async function saveNotificationSettings(settings: NotificationSettings): 
         );
     } catch (e) {
         console.error('Failed to save notification settings', e);
+    }
+}
+
+export async function getPrivacySettings(): Promise<PrivacySettings> {
+    try {
+        const database = getDb();
+        const row = database.getFirstSync<{
+            save_history: number;
+            incognito_mode: number;
+        }>('SELECT save_history, incognito_mode FROM privacy_settings WHERE id = 1');
+
+        if (row) {
+            return {
+                saveHistory: row.save_history === 1,
+                incognitoMode: row.incognito_mode === 1,
+            };
+        }
+    } catch (e) {
+        console.error('Failed to get privacy settings', e);
+    }
+
+    return {
+        saveHistory: true,
+        incognitoMode: false,
+    };
+}
+
+export async function savePrivacySettings(settings: PrivacySettings): Promise<void> {
+    try {
+        const database = getDb();
+        database.runSync(
+            'UPDATE privacy_settings SET save_history = ?, incognito_mode = ? WHERE id = 1',
+            settings.saveHistory ? 1 : 0,
+            settings.incognitoMode ? 1 : 0
+        );
+    } catch (e) {
+        console.error('Failed to save privacy settings', e);
     }
 }
 

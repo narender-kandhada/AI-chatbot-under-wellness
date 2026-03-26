@@ -22,6 +22,8 @@ export function Button({
   const grad = gradients[scheme];
   const scale = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const isProgressMode = typeof progress === 'number';
+  const isPressDisabled = disabled || loading;
 
   useEffect(() => {
     const nextProgress = Math.max(0, Math.min(progress ?? 0, 100));
@@ -79,22 +81,26 @@ export function Button({
       { shadowColor: theme.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 6 },
     ]}>
       <TouchableOpacity
-        onPress={handlePress} disabled={disabled || loading}
+        onPress={handlePress} disabled={isPressDisabled}
         onPressIn={handlePressIn} onPressOut={handlePressOut}
-        style={[styles.base, disabled && styles.disabled]}
+        style={[styles.base, isPressDisabled && !isProgressMode && styles.disabled]}
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={disabled ? ['#888', '#888'] : [...grad.buttonPrimary] as [string, string]}
+          colors={
+            isProgressMode
+              ? [theme.backgroundSecondary, theme.backgroundSecondary]
+              : (isPressDisabled ? [theme.textLight, theme.textLight] : [...grad.buttonPrimary]) as [string, string]
+          }
           style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
         >
-          {typeof progress === 'number' && (
+          {isProgressMode && (
             <Animated.View
               pointerEvents="none"
               style={[
                 styles.progressFill,
                 {
-                  backgroundColor: theme.surfaceTint,
+                  backgroundColor: theme.primary,
                   width: progressAnim.interpolate({
                     inputRange: [0, 100],
                     outputRange: ['0%', '100%'],

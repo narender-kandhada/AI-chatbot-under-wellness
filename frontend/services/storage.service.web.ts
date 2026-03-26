@@ -43,6 +43,11 @@ export interface StreakData {
     totalCheckIns: number;
 }
 
+export interface PrivacySettings {
+    saveHistory: boolean;
+    incognitoMode: boolean;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // MOOD HISTORY
 // ═══════════════════════════════════════════════════════════════
@@ -82,6 +87,17 @@ export async function loadChat(_sessionId: string): Promise<ChatMessage[]> {
 
 export async function saveJournalEntry(_mood: string, _messages: ChatMessage[]): Promise<void> {
     console.warn('[web] saveJournalEntry is a no-op on web');
+}
+
+export async function getPrivacySettings(): Promise<PrivacySettings> {
+    return {
+        saveHistory: true,
+        incognitoMode: false,
+    };
+}
+
+export async function savePrivacySettings(_settings: PrivacySettings): Promise<void> {
+    console.warn('[web] savePrivacySettings is a no-op on web');
 }
 
 export async function getJournalEntries(): Promise<JournalEntry[]> {

@@ -72,8 +72,8 @@ services/
 | Variable | Required | Description |
 |---|---|---|
 | `EXPO_PUBLIC_API_URL` | Yes | Backend base URL |
-| `EXPO_PUBLIC_TTS_STRATEGY` | No | `fast` or `full` |
-| `EXPO_PUBLIC_TTS_MAX_CHARS` | No | Max chars for `fast` strategy |
+| `EXPO_PUBLIC_TTS_STRATEGY` | No | `full` (default) or `fast` |
+| `EXPO_PUBLIC_TTS_MAX_CHARS` | No | Max chars per spoken chunk (used by `full` chunking and `fast` truncation) |
 
 ## Key Dependencies
 
